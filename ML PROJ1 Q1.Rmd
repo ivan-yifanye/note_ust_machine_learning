@@ -1,0 +1,446 @@
+---
+title: "Report of Machine Learning Project 1 Question 1"
+author: "Yifan YE"
+date: "11/9/2018"
+output: html_document
+---
+## Question 1---Children's Height
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE,warning=FALSE,message=FALSE)
+```
+
+Goal: Build a model to predict childHeight. There are 12 parts below, part 1 is preprocessing and pre-analysis of the data, part 2 to part 11 are different methods which aim to deal with this question with higher accuracy and part 12 is a comparison and conclusion. 
+
+## Part 1. Preprocessing of the Data
+
+First we should load data and some libraries that we are going to use. 
+
+```{r loading packages}
+library(car)
+library(boot)
+library(leaps)
+library(glmnet)
+library(pls)
+library(gam)
+```
+
+Then we load data and check some part of it.
+
+```{r Loading "Height" Data and Summaries}
+Height=read.table("Height.txt",header=T)
+colnames(Height)
+dim(Height)
+head(Height,n=5)
+tail(Height,n=5)
+```
+
+We can see there are one response variable (childHeight) and 6 potential predictors. Here we turn those factor variables into numerical variables.
+
+```{r factor to numeric}
+Height$familynum=as.numeric(Height$family)
+Height$gendernum=as.numeric(Height$gender)
+colnames(Height)
+dim(Height)
+head(Height,n=5)
+tail(Height,n=5)
+```
+
+Here we check the scatter plots between each pair of the variables.
+
+```{r correlations}
+pairs(Height)
+```
+
+It is clearly midparentHeight is linear independent to father and mother, which is verified by its form. Also, family and father have linear relationship.
+
+We split the data into training set and test set, later we may move forward to split the training set into two parts, one of them is used to fit models and another are used for validation, which is the core idea of CVs.
+
+```{r spliting data}
+lenx=1:nrow(Height)
+set.seed(0)
+TestIndex=sample(x=lenx,size=200) # randomly sampling
+Height.Training=Height[-TestIndex,] # here and below subsets are related to random seed
+Height.Test=Height[TestIndex,] # these two subsets of original data are all dataframe type now
+```
+
+## Part 2. Ordinary Linear Models
+
+We first try the simplest model---ordinary linear regression. But we will see that the estimated coefficient of "midparentHeight" is "NA" because it is a linear combination of "father" and "mother", which gives strong collinearity. So we here we just omit "midparentHeight" if we use OLS.
+
+```{r linear model fit}
+lm.allfit00=lm(childHeight~father+mother+midparentHeight+children+familynum+gendernum,data=Height.Training)
+summary(lm.allfit00) # there is a "NA", next we abandon "NA" due to collinearity
+```
+
+We see that father, mother, gendernum and intercept are significant from above. 
+
+```{r}
+lm.allfit0=lm(childHeight~father+mother+children+familynum+gendernum,data=Height.Training)
+summary(lm.allfit0) # 'father' and 'familynum' have collinearity
+pred.allfit0=predict(lm.allfit0,Height.Test)
+mean((pred.allfit0-Height.Test$childHeight)^2) 
+vif(lm.allfit0) 
+par(mfrow=c(2,2))
+plot(lm.allfit0) # diagnostic
+par(mfrow=c(3,2))
+crPlots(lm.allfit0) # check linearity
+```
+
+We see that the regression diagnostic are all good, which means the assumptions of OLS are almost true. Besides, the component-residue plot show that the linear model is valid. From above. 'father' and 'familynum' have collinearity, we try to drop the one with the largest VIF in the following model. Then fit the model again.
+
+```{r}
+lm.allfit=lm(childHeight~children+mother+father+gendernum,data=Height.Training)
+summary(lm.allfit) 
+pred.allfit=predict(lm.allfit,Height.Test)
+mean((pred.allfit-Height.Test$childHeight)^2) 
+vif(lm.allfit)
+par(mfrow=c(2,2))
+plot(lm.allfit) # diagnostic
+par(mfrow=c(2,2))
+crPlots(lm.allfit) # check linearity
+```
+
+The results show no collinearity. And other signals of the model are all good as the previous model. Now we get a model desired and then we need to repeat the process above and test them on corresponding test sets (50 times).
+
+```{r repeat linear model 50 times}
+allfit0.err=rep(0,50)
+allfit.err=rep(0,50)
+for(i in 1:50){
+  set.seed(i)
+  TestIndex=sample(x=lenx,size=200) 
+  Height.Training=Height[-TestIndex,]
+  Height.Test=Height[TestIndex,]
+  lm.allfit0=lm(childHeight~father+mother+children+familynum+gendernum,data=Height.Training)
+  lm.allfit=lm(childHeight~children+father+mother+gendernum,data=Height.Training)
+  pred.allfit0=predict(lm.allfit0,Height.Test)
+  allfit0.err[i]=mean((pred.allfit0-Height.Test$childHeight)^2) 
+  pred.allfit=predict(lm.allfit,Height.Test)
+  allfit.err[i]=mean((pred.allfit-Height.Test$childHeight)^2) 
+}
+mean(allfit0.err)
+mean(allfit.err)
+```
+
+Finally after 50 times, we get the MSE are 4.627755 and 4.626001 for the former one and the updated one separately.
+
+## Part 3. Non-linear term 
+
+We consider "midparentHeight" to be higher order other than a linear term. 
+
+```{r choose the power of midparentHeight}
+cv.error3=rep(0,9)
+set.seed(0)
+for(i in 2:10){
+glm.fitPoly=glm(childHeight~poly(midparentHeight,i)+father+children+familynum+gendernum,data=Height.Training)
+cv.error3[i-1]=cv.glm(Height.Training,glm.fitPoly,K=10)$delta[1]
+}
+plot(2:10,cv.error3,xlab="Order of Polynomial",ylab="CV error",type="l")
+```
+
+```{r}
+fit.1=lm(childHeight~poly(midparentHeight,1)+father+mother+children+familynum+gendernum,data=Height.Training)
+fit.2=lm(childHeight~poly(midparentHeight,2)+father+mother+children+familynum+gendernum,data=Height.Training)
+fit.3=lm(childHeight~poly(midparentHeight,3)+father+mother+children+familynum+gendernum,data=Height.Training)
+fit.4=lm(childHeight~poly(midparentHeight,4)+father+mother+children+familynum+gendernum,data=Height.Training)
+fit.5=lm(childHeight~poly(midparentHeight,5)+father+mother+children+familynum+gendernum,data=Height.Training)
+fit.6=lm(childHeight~poly(midparentHeight,6)+father+mother+children+familynum+gendernum,data=Height.Training)
+fit.7=lm(childHeight~poly(midparentHeight,7)+father+mother+children+familynum+gendernum,data=Height.Training)
+fit.8=lm(childHeight~poly(midparentHeight,8)+father+mother+children+familynum+gendernum,data=Height.Training)
+fit.9=lm(childHeight~poly(midparentHeight,9)+father+mother+children+familynum+gendernum,data=Height.Training)
+fit.10=lm(childHeight~poly(midparentHeight,10)+father+mother+children+familynum+gendernum,data=Height.Training)
+anova(fit.1,fit.2,fit.3,fit.4,fit.5,fit.6,fit.7,fit.8,fit.9,fit.10)
+```
+
+According to the plots above given by cross-validation and the anova test we take a cubic term for "midparentHeight". 
+
+```{r fit non-linear model for midparentHeight}
+glm.fitPoly0=glm(childHeight~poly(midparentHeight,3)+father+mother+children+familynum+gendernum,data=Height.Training)
+summary(glm.fitPoly0) # we find "mother" is not needed
+glm.fitPoly1=glm(childHeight~poly(midparentHeight,3)+father+children+familynum+gendernum,data=Height.Training)
+summary(glm.fitPoly1)
+par(mfrow=c(2,2))
+plot(glm.fitPoly1)
+par(mfrow=c(3,2))
+crPlots(glm.fitPoly1)
+pred.fitPoly1=predict(glm.fitPoly1,Height.Test)
+mean((pred.fitPoly1-Height.Test$childHeight)^2) # test MSE 
+```
+
+```{r repeat high order term test 50 times}
+allfit1.err=rep(0,50)
+for(i in 1:50){
+  set.seed(i)
+  TestIndex=sample(x=lenx,size=200) 
+  Height.Training=Height[-TestIndex,]
+  Height.Test=Height[TestIndex,]
+  glm.fitPoly0=glm(childHeight~poly(midparentHeight,3)+father+children+familynum+gendernum,data=Height.Training)
+  pred.allfit1=predict(glm.fitPoly0,Height.Test)
+  allfit1.err[i]=mean((pred.allfit1-Height.Test$childHeight)^2) 
+}
+mean(allfit1.err)
+```
+
+Finally, the mean MSE for 50 times is between 4.610832, which is almost the same as part 1.
+
+## Part 4. Best Subset Selection
+
+```{r best subset}
+regfit.subselect=regsubsets(childHeight~poly(midparentHeight,3)+father+children+familynum+gendernum,Height.Training)
+summary.sub=summary(regfit.subselect)
+summary.sub$rsq # increase monotonically
+```
+
+We consider RSS, adjusted $R^2$, $C_p$, and BIC.
+
+```{r best subset choice plot}
+par(mfrow=c(2,2))
+plot(summary.sub$rss,xlab="Number of Variables",ylab="RSS",type="l")
+plot(summary.sub$adjr2,xlab ="Number of Variables",ylab="Adjusted RSq",type="l")
+plot(summary.sub$cp,xlab ="Number of Variables",ylab="Cp",type="l")
+plot(summary.sub$bic,xlab="Number of Variables",ylab="BIC",type="l")
+coef(regfit.subselect,2)
+```
+
+From the plots above, we just choose the first two variables which has the lowest CV error.
+
+```{r repeat best subset selection 50 times}
+subset.err=rep(0,50)
+for(i in 1:50){
+  set.seed(i)
+  TestIndex=sample(x=lenx,size=200) 
+  Height.Training=Height[-TestIndex,]
+  Height.Test=Height[TestIndex,]
+  lm.subset=glm(childHeight~midparentHeight+gendernum,data=Height.Training)
+  pred.subset=predict(lm.subset,Height.Test)
+  subset.err[i]=mean((pred.subset-Height.Test$childHeight)^2) 
+}
+mean(subset.err)
+```
+
+Finally after 50 times, we get the MSE is 4.64014. Also very close to previous results. 
+
+## Part 5. Forward and Backward Stepwise Selection
+
+```{r forward and backward stepwise selection choice plot}
+regfit.fwd=regsubsets(childHeight~poly(midparentHeight,3)+father+children+familynum+gendernum,data=Height.Training,method="forward")
+summary.fwd=summary(regfit.fwd)
+summary.fwd
+regfit.bkd=regsubsets(childHeight~poly(midparentHeight,3)+father+children+familynum+gendernum,data=Height.Training,method="backward")
+summary.bkd=summary(regfit.bkd)
+summary.bkd
+par(mfrow=c(2,2))
+plot(summary.fwd$rss,xlab="Number of Variables",ylab="RSS",type="l")
+plot(summary.fwd$adjr2,xlab ="Number of Variables",ylab="Adjusted RSq",type="l")
+plot(summary.fwd$cp,xlab ="Number of Variables",ylab="Cp",type="l")
+plot(summary.fwd$bic,xlab="Number of Variables",ylab="BIC",type="l")
+coef(regfit.fwd,2)
+par(mfrow=c(2,2))
+plot(summary.bkd$rss,xlab="Number of Variables",ylab="RSS",type="l")
+plot(summary.bkd$adjr2,xlab ="Number of Variables",ylab="Adjusted RSq",type="l")
+plot(summary.bkd$cp,xlab ="Number of Variables",ylab="Cp",type="l")
+plot(summary.bkd$bic,xlab="Number of Variables",ylab="BIC",type="l")
+coef(regfit.bkd,2)
+```
+
+The chose variables are the same with the best subset selection, so we do not repeat the same result here.
+
+## Part 6. Ridge Regression
+
+Back to the OLS, in order to deal with the problem of collinearity, we can use ridge regression to fix or ease this problem (A way to reduce the dimension). 
+
+```{r compute the tunning parameter and predict (Ridge)}
+set.seed(0)
+cv.out=cv.glmnet(cbind(Height.Training$father,Height.Training$mother,Height.Training$midparentHeight,Height.Training$children,Height.Training$familynum,Height.Training$gendernum),Height.Training$childHeigh,alpha=0)
+plot(cv.out)
+bestlam=cv.out$lambda.min
+ridge.mod=glmnet(cbind(Height.Training$father,Height.Training$mother,Height.Training$midparentHeight,Height.Training$children,Height.Training$familynum,Height.Training$gendernum),Height.Training$childHeight,alpha=0,lambda=bestlam,thresh=1e-12)
+ridge.pred=predict(ridge.mod,s=bestlam,newx=cbind(Height.Test$father,Height.Test$mother,Height.Test$midparentHeight,Height.Test$children,Height.Test$familynum,Height.Test$gendernum))
+mean((ridge.pred-Height.Test$childHeight)^2)
+```
+
+```{r repeat ridge regression 50 times}
+ridge.err=rep(0,50)
+for(i in 1:50){
+  set.seed(i)
+  TestIndex=sample(x=lenx,size=200) 
+  Height.Training=Height[-TestIndex,]
+  Height.Test=Height[TestIndex,]
+  cv.out=cv.glmnet(cbind(Height.Training$father,Height.Training$mother,Height.Training$midparentHeight,Height.Training$children,Height.Training$familynum,Height.Training$gendernum),Height.Training$childHeigh,alpha=0)
+  bestlam=cv.out$lambda.min
+  ridge.mod=glmnet(cbind(Height.Training$father,Height.Training$mother,Height.Training$midparentHeight,Height.Training$children,Height.Training$familynum,Height.Training$gendernum),Height.Training$childHeight,alpha=0,lambda=bestlam,thresh=1e-12)
+  ridge.pred=predict(ridge.mod,s=bestlam,newx=cbind(Height.Test$father,Height.Test$mother,Height.Test$midparentHeight,Height.Test$children,Height.Test$familynum,Height.Test$gendernum))
+ridge.err[i]=mean((ridge.pred-Height.Test$childHeight)^2)
+}
+mean(ridge.err)
+```
+
+Finally after 50 times, we get the MSE is 4.665256. Also very close to previous results. 
+
+## Part 7. Lasso
+
+Another way is to use Lasso.
+
+```{r compute the tunning parameter and predict (Lasso)}
+set.seed(0)
+cv.out=cv.glmnet(cbind(Height.Training$father,Height.Training$mother,Height.Training$midparentHeight,Height.Training$children,Height.Training$familynum,Height.Training$gendernum),Height.Training$childHeigh,alpha=1)
+plot(cv.out)
+bestlam=cv.out$lambda.min
+Lasso.mod=glmnet(cbind(Height.Training$father,Height.Training$mother,Height.Training$midparentHeight,Height.Training$children,Height.Training$familynum,Height.Training$gendernum),Height.Training$childHeight,alpha=1,lambda=bestlam,thresh=1e-12)
+Lasso.pred=predict(Lasso.mod,s=bestlam,newx=cbind(Height.Test$father,Height.Test$mother,Height.Test$midparentHeight,Height.Test$children,Height.Test$familynum,Height.Test$gendernum))
+mean((Lasso.pred-Height.Test$childHeight)^2)
+```
+
+```{r repeat Lasso 50 times}
+Lasso.err=rep(0,50)
+for(i in 1:50){
+  set.seed(i)
+  TestIndex=sample(x=lenx,size=200) 
+  Height.Training=Height[-TestIndex,]
+  Height.Test=Height[TestIndex,]
+  cv.out=cv.glmnet(cbind(Height.Training$father,Height.Training$mother,Height.Training$midparentHeight,Height.Training$children,Height.Training$familynum,Height.Training$gendernum),Height.Training$childHeigh,alpha=1)
+  bestlam=cv.out$lambda.min
+  Lasso.mod=glmnet(cbind(Height.Training$father,Height.Training$mother,Height.Training$midparentHeight,Height.Training$children,Height.Training$familynum,Height.Training$gendernum),Height.Training$childHeight,alpha=1,lambda=bestlam,thresh=1e-12)
+  Lasso.pred=predict(Lasso.mod,s=bestlam,newx=cbind(Height.Test$father,Height.Test$mother,Height.Test$midparentHeight,Height.Test$children,Height.Test$familynum,Height.Test$gendernum))
+  Lasso.err[i]=mean((Lasso.pred-Height.Test$childHeight)^2)
+}
+mean(Lasso.err)
+```
+
+Finally after 50 times, we get the MSE is 4.631848. Also very close to previous results. 
+
+## Part 8. Principal Components Regression
+
+Here we want to use PCR to reduce the dimension. 
+
+```{r principal components regression}
+set.seed(0)
+pcr.fit=pcr(childHeight~father+mother+children+familynum+gendernum,data=Height.Training,scale=TRUE,validation="CV")
+summary(pcr.fit)
+```
+
+According to the textbook, pcr() reports the root mean squared error; in order to obtain the usual MSE, we must square this quantity. Here the smallest one is `2.144^2`
+
+```{r}
+validationplot(pcr.fit,val.type="MSEP")
+```
+
+```{r predict pcr}
+pcr.pred=predict(pcr.fit,cbind(Height.Test$father,Height.Test$mother,Height.Test$children,Height.Test$familynum,Height.Test$gendernum),ncomp=4)
+mean((pcr.pred-Height.Test$childHeight)^2)
+```
+
+```{r repeat pcr}
+pcr.err=rep(0,50)
+for(i in 1:50){
+  set.seed(i)
+  TestIndex=sample(x=lenx,size=200) 
+  Height.Training=Height[-TestIndex,]
+  Height.Test=Height[TestIndex,]
+  pcr.fit=pcr(childHeight~father+mother+children+familynum+gendernum,data=Height.Training,scale=TRUE,validation="CV")
+  pcr.pred=predict(pcr.fit,cbind(Height.Test$father,Height.Test$mother,Height.Test$children,Height.Test$familynum,Height.Test$gendernum),ncomp=4)
+  pcr.err[i]=mean((pcr.pred-Height.Test$childHeight)^2)
+}
+mean(pcr.err)
+```
+
+Finally after 50 times, we get the MSE is 4.615725, which is very close to OLS. 
+
+## Part 9. Partial Least Squares
+
+```{r partial least squares}
+set.seed(0)
+pls.fit=plsr(childHeight~father+mother+children+familynum+gendernum,data=Height.Training,scale=TRUE,validation="CV")
+summary(pls.fit)
+```
+
+```{r}
+validationplot(pls.fit,val.type="MSEP")
+```
+
+```{r}
+pls.pred=predict(pls.fit,cbind(Height.Test$father,Height.Test$mother,Height.Test$children,Height.Test$familynum,Height.Test$gendernum),ncomp=2)
+mean((pls.pred-Height.Test$childHeight)^2)
+```
+
+```{r repeat pls}
+pls.err=rep(0,50)
+for(i in 1:50){
+  set.seed(i)
+  TestIndex=sample(x=lenx,size=200) 
+  Height.Training=Height[-TestIndex,]
+  Height.Test=Height[TestIndex,]
+  pls.fit=plsr(childHeight~father+mother+children+familynum+gendernum,data=Height.Training,scale=TRUE,validation="CV")
+  pls.pred=predict(pls.fit,cbind(Height.Test$father,Height.Test$mother,Height.Test$children,Height.Test$familynum,Height.Test$gendernum),ncomp=2)
+  pls.err[i]=mean((pls.pred-Height.Test$childHeight)^2)
+}
+mean(pls.err)
+```
+
+Finally after 50 times, we get the MSE is 4.626775, which is very close to OLS. 
+
+## Part 10. Local Regression
+
+We try local regression to see if it is better.
+
+```{r local regression}
+lo.fit=gam(childHeight~lo(father,span =0.7)+lo(mother,span=0.5)+children+familynum+gendernum,data=Height.Training)
+pred.lo=predict(lo.fit,Height.Test)
+mean((Height.Test$childHeight-pred.lo)^2)
+```
+
+```{r plot local}
+par(mfrow=c(3,2))
+plot(lo.fit,se=TRUE,col="red")
+```
+
+```{r local repeat}
+lo.err=rep(0,50)
+for(i in 1:50){
+  set.seed(i)
+  TestIndex=sample(x=lenx,size=200) 
+  Height.Training=Height[-TestIndex,]
+  Height.Test=Height[TestIndex,]
+  lo.fit=gam(childHeight~lo(father,span=0.7)+lo(mother,span=0.5)+children+familynum+gendernum,data=Height.Training)
+  pred.lo=predict(lo.fit,Height.Test)
+  lo.err[i]=mean((Height.Test$childHeight-pred.lo)^2)
+}
+mean(lo.err)
+```
+
+Finally after 50 times, we get the MSE is 4.619466, which is very close to OLS. 
+
+## Part 11. GAM
+
+Finally we try GAM to see if it works better.
+
+```{r GAM}
+gam.fit=gam(childHeight~s(father,5)+s(mother,3)+children+familynum+gendernum,data=Height.Training)
+pred.gam=predict(gam.fit,Height.Test)
+mean((Height.Test$childHeight-pred.gam)^2)
+```
+
+```{r GAM plot}
+par(mfrow=c(3,2))
+plot(gam.fit,se=TRUE,col="red")
+```
+
+```{r GAM repeat}
+gam.err=rep(0,50)
+for(i in 1:50){
+  set.seed(i)
+  TestIndex=sample(x=lenx,size=200) 
+  Height.Training=Height[-TestIndex,]
+  Height.Test=Height[TestIndex,]
+  gam.fit=gam(childHeight~s(father,5)+s(mother,3)+children+familynum+gendernum,data=Height.Training)
+  pred.gam=predict(gam.fit,Height.Test)
+  gam.err[i]=mean((Height.Test$childHeight-pred.gam)^2)
+}
+mean(gam.err)
+```
+
+Finally after 50 times, we get the MSE is 4.621664, which is very close to OLS. 
+
+## Part 12. Conclusion
+
+From what we have done above (50 times for different models and calculate mean MSE), we find that the possibility of linear relationships between the response and other variables are quite large because when we use some non-linear methods like smoothing splines, it turns out to be a almost linear model and gives a little bit worse result (a little bit higher MSE). For almost every kind of method the final MSE is between 4.6 to 4.7. The best result goes to 4.610832 when we use linear term for father, children, family, gender and polynomial terms for midparentHeight in part 3. At the same time, other models produce similar or close results so it is harder to judge whether a model is better than the other by such tiny differences. But according to those absolute values of MSEs, we can choose the model mentioned before as final choice or just the simplest model (OLS) in part 1.

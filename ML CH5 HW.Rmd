@@ -1,0 +1,188 @@
+---
+title: "Machine Learning Chapter 5 Homework"
+author: "Yifan YE"
+date: "11/5/2018"
+output: html_document
+---
+## Chapter 5 Problem 1
+We want to we want to minimize the following equation:
+$$\begin{aligned}
+\mathrm{Var}(\alpha X+(1-\alpha)Y)
+=&\alpha^2\mathrm{Var}(X)+(1-\alpha)^2\mathrm{Var}(Y)+2\alpha(1-\alpha)\mathrm{Cov}(X,Y)\\
+=&\alpha^2\sigma_X^2+(1-\alpha)^2\sigma_Y^2+2\alpha(1-\alpha)\sigma_{XY}\\
+=&(\sigma_X^2+\sigma_Y^2-2\sigma_{XY})\alpha^2+(2\sigma_{XY}-2\sigma_{Y}^2)\alpha+\sigma_{Y}^2\\
+\end{aligned}$$
+This is a quadratic problem, so by properties of parabola, the minimun can be reached when the independent variable $\alpha$ take the value on axis of symmetry (in common case, $x=-\dfrac{b}{2a}$), so following value will make it to minimum:
+$$\alpha=-\dfrac{2\sigma_{XY}-2\sigma_{Y}^2}{2(\sigma_X^2+\sigma_Y^2-2\sigma_{XY})}=\dfrac{\sigma_{Y}^2-\sigma_{XY}}{\sigma_X^2+\sigma_Y^2-2\sigma_{XY}}$$
+which corresponds to (5.6).
+
+## Chapter 5 Problem 2
+At the beginning, according to the textbook: "the bootstrap sampling is performed with replacement, which means that the replacement same observation can occur more than once in the bootstrap data set. This
+procedure is repeated B times for some large value of B."
+
+(a) Here we need that the first bootstrap observation is not the jth observation from the original sample. So the first bootstrap observation can just be chosen among other (n-1) observations. So the probability is $$\dfrac{n-1}{n}=1-\dfrac{1}{n}$$
+
+(b) Here we need that the second bootstrap observation is not the jth observation from the original sample. So the second bootstrap observation can just be chosen among other (n-1) observations. Because the procedure is with replacement so the two steps are relatively independent, which means the probability is:
+$$\dfrac{n-1}{n}=1-\dfrac{1}{n}$$
+
+(c) Here we need that the jth observation is not in the bootstrap sample. Considering that every step is independent so we just consider every step there is no the jth observation, the probability is:
+$$(\dfrac{n-1}{n})^n=(1-\dfrac{1}{n})^n$$
+
+(d) The probability that the jth observation is in the bootstrap sample is $1-(1-\dfrac{1}{n})^n$. Here $n=5$ so the probability is:
+$$1-(1-\dfrac{1}{5})^5=0.67232$$
+
+(e) Here $n=100$ so the probability is:
+$$1-(1-\dfrac{1}{100})^100=0.6339677$$
+
+(f) Here $n=10000$ so the probability is:
+$$1-(1-\dfrac{1}{10000})^10000=0.632139$$
+
+(g) We will create a plot that displays, for each integer value of n from 1 to 100, 000.
+```{r}
+probability=function(n){
+  p=1-(1-1/n)^n
+  return(p)}
+x=1:100000
+plot(x,probability(x),cex=0.1)
+```
+```{r}
+probability(100000)
+```
+
+The probability converges to probability(100000) = 0.6321224 with a very steep path.
+
+(h) The textbook has already prepare codes for us to check that "a bootstrap sample of size n = 100 contains the jth observation and each time we record whether or not the fourth observation is contained in the bootstrap sample".
+```{r}
+store=rep(NA,100000)
+for(i in 1:100000){store[i]=sum(sample(1:100,rep=TRUE)==4)>0}
+mean(store)
+```
+The numerical test shows that the probability that a bootstrap sample contains the 4th observation is approximately 0.6326, which coincide with our previous result.
+
+## Chapter 5 Problem 5
+(a) Fit a logistic regression model:
+```{r}
+library(ISLR)
+attach(Default)
+glm.fits=glm(default~income+balance,data=Default,family=binomial)
+summary(glm.fits)
+```
+
+(b) Using the validation set approach to estimate the test error of this model. 
+
+(i) By textbook, "Split the sample set into a training set and a validation set". Here we choose one half of the whole data to be the training set and the other part to be the test set, each 5000 sample.
+```{r}
+x=1:nrow(Default)
+set.seed(1)
+c=sample(x=x,size=nrow(Default)/2)
+Default_Training=Default[c,]
+Default_Validation=Default[-c,]
+```
+
+(ii) By textbook, "Fit a multiple logistic regression model using only the training observations."
+```{r}
+glm.fits2=glm(default~income+balance,data=Default_Training,family=binomial)
+summary(glm.fits2)
+```
+
+(iii) By textbook, "Obtain a prediction of default status for each individual in the validation set by computing the posterior probability of default for that individual, and classifying the individual to the default category if the posterior probability is greater than 0.5."
+```{r}
+glm.probs=predict(glm.fits2,Default_Validation,type="response")
+glm.pred=rep("No",nrow(Default)/2)
+glm.pred[glm.probs>.5]="Yes"
+```
+
+(iv) By textbook, "Compute the validation set error, which is the fraction of the observations in the validation set that are misclassified."
+```{r}
+table(glm.pred,Default_Validation$default)
+sum(glm.pred!=Default_Validation$default)/(sum(glm.pred!=Default_Validation$default)+sum(glm.pred==Default_Validation$default))
+```
+
+(c) Repeat the process in (b) three times.
+```{r}
+set.seed(2)
+d=sample(x=x,size=nrow(Default)/2)
+Default_Training=Default[d,]
+Default_Validation=Default[-d,]
+glm.fits2=glm(default~income+balance,data=Default_Training,family=binomial)
+glm.probs=predict(glm.fits2,Default_Validation,type="response")
+glm.pred=rep("No",nrow(Default)/2)
+glm.pred[glm.probs>.5]="Yes"
+table(glm.pred,Default_Validation$default)
+sum(glm.pred!=Default_Validation$default)/(sum(glm.pred!=Default_Validation$default)+sum(glm.pred==Default_Validation$default))
+```
+```{r}
+set.seed(3)
+e=sample(x=x,size=nrow(Default)/2)
+Default_Training=Default[e,]
+Default_Validation=Default[-e,]
+glm.fits2=glm(default~income+balance,data=Default_Training,family=binomial)
+glm.probs=predict(glm.fits2,Default_Validation,type="response")
+glm.pred=rep("No",nrow(Default)/2)
+glm.pred[glm.probs>.5]="Yes"
+table(glm.pred,Default_Validation$default)
+sum(glm.pred!=Default_Validation$default)/(sum(glm.pred!=Default_Validation$default)+sum(glm.pred==Default_Validation$default))
+```
+```{r}
+set.seed(4)
+f=sample(x=x,size=nrow(Default)/2)
+Default_Training=Default[f,]
+Default_Validation=Default[-f,]
+glm.fits2=glm(default~income+balance,data=Default_Training,family=binomial)
+glm.probs=predict(glm.fits2,Default_Validation,type="response")
+glm.pred=rep("No",nrow(Default)/2)
+glm.pred[glm.probs>.5]="Yes"
+table(glm.pred,Default_Validation$default)
+sum(glm.pred!=Default_Validation$default)/(sum(glm.pred!=Default_Validation$default)+sum(glm.pred==Default_Validation$default))
+```
+The error rate is roughly inside the interval [0.024,0.029]. So we can estimate the test error can be represented by the average error rate $$(0.0262+0.0248+0.0276+0.0286)/4=0.0268$$
+
+(d) 
+```{r}
+set.seed(5)
+g=sample(x=x,size=nrow(Default)/2)
+Default_Training=Default[g,]
+Default_Validation=Default[-g,]
+glm.fits3=glm(default~income+balance+student,data=Default_Training,family=binomial)
+summary(glm.fits3)
+```
+```{r}
+glm.probs=predict(glm.fits3,Default_Validation,type="response")
+glm.pred=rep("No",nrow(Default)/2)
+glm.pred[glm.probs>.5]="Yes"
+table(glm.pred,Default_Validation$default)
+sum(glm.pred!=Default_Validation$default)/(sum(glm.pred!=Default_Validation$default)+sum(glm.pred==Default_Validation$default))
+```
+There is no significant reduction in test error after we add the dummy variable for 'student'.
+
+## Chapter 5 Problem 6
+By th textbook, "we will now compute estimates for the standard errors of the income and balance logistic regression coefficients in two different ways: using the bootstrap and using the standard formula for computing the standard errors in the glm() function."
+
+(a) Multiple logistic regression.
+```{r}
+set.seed(10)
+k=sample(x=x,size=nrow(Default)/2)
+Default_Training=Default[k,]
+Default_Validation=Default[-k,]
+glm.fits4=glm(default~income+balance,data=Default_Training,family=binomial)
+summary(glm.fits4)
+```
+Estimated standard errors are 6.525e-01, 7.147e-06, 3.364e-04 for the corfficients.
+
+(b) First we write a function to complete the process of Logistic regression and then complete the bootstrap process. 
+```{r}
+boot.fn=function(data,index){
+  coefficient=coef(glm(default~income+balance,data=data,family=binomial,subset=index))
+  return(coefficient)
+}
+set.seed(20)
+boot.fn(Default,sample(100,100,replace=T))
+```
+
+(c) By textbook, "use the boot() function together with your boot.fn() function to estimate the standard errors"
+```{r}
+library(boot)
+boot(Default,boot.fn,R=100)
+```
+
+(d) The estimated standard errors obtained using the glm() function in part (a) is 6.525e-01, 7.147e-06 and 3.364e-04 for each parameter. On the other hand, the estimated standard errors obtained using boot.fn and boot is 3.832178e-01, 4.414981e-06 and 2.205615e-04 for each parameter. It is obvious that they are very similar, even have the same order of magnitudes for each parameter.

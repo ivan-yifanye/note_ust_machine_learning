@@ -1,0 +1,167 @@
+---
+title: "Machine Learning Chapter 2 Homework"
+author: "Yifan YE"
+date: "10/8/2018"
+output: html_document
+---
+## Chapter 2 Problem 1
+(a) 
+When the sample size n is extremely large and the number of predictors p is small, we would generally expect the performance of a flexible statistical learning method to be worse than an inflexible method. In other words, flexible method is perhaps not a good method in this case. Because when the sample size n is extremely large, there will be more outliers and other noises. If we still use a flexible method, the possibility of overfitting is much higher. We can also refer to page 22 of our textbook, where writes "fitting a more flexible model requires estimating a greater number of parameters."
+
+(b) 
+When the number of predictors p is extremely large and the number of observations n is small, we would expect the performance of a flexible statistical learning method still to be worse than an inflexible method. Because, first, in this situation the parameters will not be estimated accurately because of the small sample size. Second, when our information is not enough, it is better to choose a simple model with high interpretability, as it says in page 25 in textbook, "restrictive models are much more interpretable."
+
+(c) 
+When the relationship between the predictors and response is highly non-linear, we would expect the performance of a flexible method to be better than an inflexible method. Because the more complicated the relationship between predictors and response, the more difficult for us to fit them in a simple way (let's say OLS). Although sometimes it depends on the level of non-linearity. When their true relationship is highly non-linear (e.g. fully non-linear), it is much better to use a flexible model. In such a case, we place a higher value on fitness rather than interpretability.
+
+(d) 
+When The variance of the error terms, i.e. $\sigma^2 = Var(\epsilon)$, is extremely high, we would expect the performance of a flexible method to be worst than an inflexible method. Because under this circumstance more datas would deviate from the center of datas. If we use a very flexible method then the fitting result may be disturbed by large deviations so that we can not get a very good answer.
+
+## Chapter 2 Problem 3
+(a)
+<img src="/Users/IvanYe/Desktop/R/ML/FivePlots.png">
+
+(b) 
+(1) First, we consider the situation for (squared) bias. As we use more flexible methods, the bias will decrease. Because bias refers to the error that is introduced by approximating a real-life problem (textbook page 35). We can not expect a real problem to be as simple as linear models, so when we add complexity to models, the new model can reflect more intrinsic relationsips that can not be interpreted by simple models. So bias decreases when flexibility increases.
+
+(2) Second, we consider the situation for variance. As we use more flexible methods, the variance will increase. Because variance refers to the amount by which $\hat{f}$ would change if we
+estimated it using a different training data set. When our model is very flexible, more parameters will have effects on final results and the newly added deviations must be non-negative, so as the number of parameters increases (more flexibility), the variance would increase.
+
+(3) Third, we consider the situation for training error. As we use more flexible methods, the training error will decrease. Because training datas are what we known, in the fitting procedure, it is a criterion for us to alter our models. In other words, when we try to add more flexibility to our model (or more fitted to training datas), we are seeking a model that has lower training error, which means the new model is more similar to the real relationship implied by training datas. So the training error declines monotonically as flexibility increases.
+
+(4) Fourth, we consider the situation for test error. The current situation is more complicated, bacause as we use more flexible methods, the moving tandency of test error displays a U-shape feature. Because our statistical learning procedure is working too hard to find patterns in the training data, and may be picking up some patterns that are just caused by random chance rather than by true properties of the unknown function (overfitting, textbook page 32). So at the initial stage when flexibility grows but not too large, the test error may decrease. But when flexility grows to a relative large number, the test error will increase again due to overfitting.
+
+(5) Finally, we consider the situation for Bayes (or irreducible) error curves. The irreducible error will always be the same, no matter how large the flexibility is. Because Y is also a function of $\epsilon$, which, by definition, cannot be predicted using X. So no matter how we alter our model or data sets, the irreducible error is always there, it is a relative independent noise decided by the intrinsic properties of datas.
+
+## Chapter 2 Problem 8
+(a)
+```{r}
+college=read.csv("College.csv", header=T)
+```
+
+(b)
+```{r}
+rownames(college)=college[ ,1]
+college=college[ ,-1]
+```
+
+(c)
+i. Numerical summary of the variables of the data.
+```{r}
+summary(college)
+```
+
+ii. Scatterplot matrix of the first ten columns or variables of the data.
+```{r}
+pairs(college[,1:12])
+```
+   
+iii. boxplots of 'Outstate' versus 'Private'.
+```{r}
+attach(college)
+boxplot(Outstate~Private, col='red', ylab="Out-of-state tuition", xlab ="Public/private indicator")
+```
+
+iv. A new qualitative variable, called Elite, by binning the Top10perc variable.
+```{r}
+Elite=rep("No",nrow(college))
+Elite[college$Top10perc>50]="Yes"
+Elite=as.factor(Elite)
+college=data.frame(college, Elite)
+summary(Elite)
+```
+```{r}
+boxplot(Outstate~Elite, col='blue', ylab="Out-of-state tuition", xlab ="Elite indicator")
+```
+
+v.
+```{r}
+summary(college)
+```
+
+```{r}
+par(mfrow=c(2,3))
+hist(Apps, breaks = 25, col=rainbow(3), labels = '', density = 10)
+hist(Accept, breaks = 25, col=rainbow(4), labels = '', density = 5)
+hist(Enroll, breaks = 25, col=rainbow(3), labels = '', density = 20)
+hist(Top10perc, breaks = 25, col=rainbow(3), labels = '', density = 10)
+hist(Top25perc, breaks = 25, col=rainbow(3), labels = '', density = 15)
+hist(F.Undergrad, breaks = 25, col=rainbow(5), labels = '', density = 10)
+hist(P.Undergrad, breaks = 25, col=rainbow(7), labels = '', density = 10)
+hist(Outstate, breaks = 25, col=rainbow(9), labels = '', density = 10)
+hist(Room.Board, breaks = 25, col=rainbow(3), labels = '', density = 30)
+hist(Books, breaks = 25, col=rainbow(5), labels = '', density = 1)
+hist(Personal, breaks = 25, col=rainbow(3), labels = '', density = 10)
+hist(PhD, breaks = 25, col=rainbow(6), labels = '', density = 1)
+hist(Terminal, breaks = 25, col=rainbow(3), labels = '', density = 10)
+hist(S.F.Ratio, breaks = 25, col=rainbow(3), labels = '', density = 10)
+hist(Expend, breaks = 25, col=rainbow(3), labels = '', density = 10)
+hist(Grad.Rate, breaks = 25, col=rainbow(7), labels = '', density = 1)
+hist(perc.alumni, breaks = 25, col=rainbow(8), labels = '', density = 1)
+```
+
+vi.Continue exploring the data.
+```{r}
+pairs(college[,13:17])
+```
+We continue to draw scatter plots for remained variables that we haven't draw plots before, from the scatter matrix above, we can find that the 'PhD' and 'Terminal' variables are mostly correlated among these variables.
+
+## Chapter 2 Problem 10
+(a) load in the Boston data set.
+```{r}
+library(MASS)
+data(Boston)
+summary(Boston)
+nrow(Boston)
+ncol(Boston)
+```
+So there are 506 rows represented for different houses in suburbs of Boston and there are 14 rows represented for some features or characteristics of those houses. 
+
+(b) Make some pairwise scatterplots of the predictors (columns) in this data set.
+```{r}
+pairs(Boston[,1:10])
+```
+From the scatter plots matrix above, we find 'nox' and 'dis' are mostly correlated and some other pair of variables are not so strong correlated.
+
+(c) Are any of the predictors associated with per capita crime rate?
+```{r}
+cor.test(Boston[,1],Boston[,2],method="pearson")
+```
+We examine the correlation relationship between 'zn' and 'crim'. We conclude that 'zn' (proportion of residential land zoned for lots over 25,000 sq.ft.) is correlated to 'crim' (per capita crime rate by town) because the p-value is rather small.
+
+(d) Do any of the suburbs of Boston appear to have particularly high crime rates? Tax rates? Pupil-teacher ratios?
+```{r}
+attach(Boston)
+boxplot(crim, col='blue', ylab="", xlab ="")
+boxplot(tax, col='yellow', ylab="", xlab ="")
+boxplot(ptratio, col='red', ylab="", xlab ="")
+```
+From the boxplots above, we can find that there are suburbs of Boston appear to have particularly
+high crime rates. But for Tax rates and Pupil-teacher ratios, the bosplots don't show such a similar behavior.
+
+(e) How many of the suburbs in this data set bound the Charles river?
+```{r}
+sum(chas)
+```
+From above we know there are 35 suburbs in this data set bound the Charles river.
+
+(f) What is the median pupil-teacher ratio among the towns in this data set?
+```{r}
+median(ptratio)
+```
+The median pupil-teacher ratio is 19.05.
+
+(g) Which suburb of Boston has lowest median value of owneroccupied homes?
+```{r}
+row.names(Boston[Boston$medv==min(Boston$medv),])
+```
+The No.399 and No.406 have the lowest median value of owneroccupied homes.
+
+(h) In this data set, how many of the suburbs average more than seven rooms per dwelling? More than eight rooms per dwelling?
+```{r}
+nrow(Boston[Boston$rm>7,])
+```
+```{r}
+nrow(Boston[Boston$rm>8,])
+```
+Totally 64 suburbs have average more than seven rooms per dwelling and 13 suburbs have average more than eight rooms per dwelling.

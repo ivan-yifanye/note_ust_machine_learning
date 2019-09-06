@@ -1,0 +1,116 @@
+---
+title: "Machine Learning Chapter 3 Homework"
+author: "Yifan YE"
+date: "10/9/2018"
+output: html_document
+---
+## Chapter 3 Problem 1
+Test on a single variable. The null hypothesis is the coefficient is 0 and the alternative is the coefficient is not 0. The p-value for 'newspaper' is large so we accept the null hypothesis that the coefficient of 'newspaper' is 0, which means that 'newspaper' is not significant in this model. For other variables, their coefficients are not significant to be 0, so we draw the conclusion that for 'TV' and 'Radio', they are significant in the model because of the very low p-value.
+
+## Chapter 3 Problem 5
+Because we use a model without intercept in this example, $\hat{y_i}=x_i\hat{\beta}$ and an estimate of parameters is given by $\hat{\beta}=(\sum_{i=1}^nx_iy_i/(\sum_{j=1}^nx_{j}^2)$. So we get $x_k*(\sum_{i=1}^nx_iy_i/(\sum_{j=1}^nx_{j}^2)=x_k\hat{\beta}=\hat{y_k}$. Notice the linear relationships between them $\hat{y_k}=\sum_{i=1}^na_iy_i$, we can easily derive that $a_i=x_kx_i/(\sum_{j=1}^nx_{j}^2)$, or we can put it another way: $\hat{y_k}=\sum_{i=1}^n[x_kx_i/(\sum_{j=1}^nx_{j}^2)]y_i$
+
+## Chapter 3 Problem 8
+(a) Simple linear regression
+```{r}
+library(ISLR)
+data(Auto)
+attach(Auto)
+lm.fit=lm(mpg~horsepower,data=Auto)
+summary(lm.fit)
+```
+(i) 
+There is a relationship between the predictor and the response because the p-value is very small and smaller than significant level, we have to reject null hypothesis (no relations), which means we think there is such a relationship.
+
+(ii)
+Not very strong. Because $R^2$ is just 0.6059, which is much less than 1.
+
+(iii)
+Negative. Because the coefficient of 'horsepower' is negative.
+ 
+(iv) Confidence and prediction intervals:
+```{r}
+predict(lm.fit, data.frame(horsepower=98))
+predict(lm.fit, data.frame(horsepower=98), interval ="confidence")
+predict(lm.fit, data.frame(horsepower=98), interval ="prediction")
+```
+The predicted value is 24.46708. The prediction interval is [14.8094, 34.12476]. The confidence interval is [23.97308, 24.96108].
+
+(b) Plot the response and the predictor.
+```{r}
+plot(horsepower, mpg)
+abline(lm.fit)
+```
+
+(c) Use the plot() function to produce diagnostic plots of the least squares regression fit.
+```{r}
+par(mfrow =c(2,2))
+plot(lm.fit)
+```
+
+(1) The Residual-Fitted plot is showing that we still can add some non-linear term to this model, for example, we can add a 2nd order term to our previous model.
+
+(2) The Q-Q plot is used for verifying the assumption of normal distribution, from the Q-Q plot above we can see that the datas are nearly normal distributed because it is very close to the real normal distribution except a little bit heavy tail.
+
+(3) The Scale-Location plot is used to test homogeneous variance property. In this plot, the datas are nearly distributed around the red line randomly, so we can agree that the variance of error terms are the same.
+
+(4) The Residuals vs Leverage plot shows us that there are some leverage points. For example, 114. But most of the data points are lying inside the confidence interval introduced by Cook' distance.
+
+## Chapter 3 Problem 9
+(a) Produce a scatterplot matrix which includes all of the variables in the data set.
+```{r}
+pairs(Auto[,1:8])
+```
+
+(b) Compute the matrix of correlations between the variables using the function cor(). 
+```{r}
+Auto<-subset(Auto,select=-name)
+cor(Auto)
+```
+
+(c) Multiple linear regression
+```{r}
+lm.fit1=lm(mpg~.-name,data=Auto)
+summary(lm.fit1)
+```
+
+(i) The model is significant, because the p-value of F test shows us that there is a relationship between the predictors and the response. 
+
+(ii) From the summary above we can see the p-values for different variables. We can conclude the these variables appear to have a statistically significant relationship to the response
+
+(iii) 'year' is very significant with a very small p-value. The coefficient of 'year' means when the variable 'year' change one unit, the reponse variable will response the number of coefficient units. This coefficient shows a response level or magnitude to 'year'.
+
+(d) (This is (d) problem, the display of symbol is wrong) Use the plot() function to produce diagnostic plots of the linear regression fit. 
+```{r}
+par(mfrow=c(2,2))
+plot(lm.fit1)
+```
+
+(1) The Residual-Fitted plot is showing that we still can add a little non-linear term to this model, but the plot is very similar to be a straight line. In general, we can think the model as linear because of the nearly horizontal line.
+
+(2) The Q-Q plot is used for verifying the assumption of normal distribution, from the Q-Q plot above we can see that the datas are nearly normal distributed because it is very close to the real normal distribution but we can view the distributionas a little heavy tail.
+
+(3) The Scale-Location plot is used to test homogeneous variance property. In this plot, the datas are nearly distributed around the red line randomly, so we can agree that the variance of error terms are the same. In this plot the datas are almost totally randomly distributed.
+
+(4) The Residuals vs Leverage plot shows us that there are some leverage points. Nearly all the data points lie inside the confidence interval. But point like 14 is obviously a outlier.
+
+(e) Use the * and : symbols to fit linear regression models with interaction effects.
+```{r}
+lm.fit2=lm(mpg~cylinders*displacement,data=Auto)
+summary(lm.fit2)
+```
+
+From the test above we can see that the 'cylinders*displacement' term is very significant to the new model due to the rather small p-value. It is a good example of interactions that appears to be statistically significant.
+
+(f) 
+```{r}
+summary(lm(mpg~log(year), data=Auto))
+```
+```{r}
+summary(lm(mpg~sqrt(year), data=Auto))
+```
+```{r}
+summary(lm(mpg~year^2, data=Auto))
+```
+
+We use log(year), sqrt(year) and year^2 as predicted variables. The outcome shows that the three cases are all very significant.

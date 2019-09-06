@@ -1,0 +1,37 @@
+---
+title: "Machine Learning Chapter 8 Homework"
+author: "Yifan YE"
+date: "11/24/2018"
+output: html_document
+---
+## Chapter 8 Problem 3
+
+In this case, there are only two classes. We write the three kinds of loss measures below with the observation that $\hat{p}_{m1}=1-\hat{p}_{m2}$:
+
+1. Gini Index: $$G=\sum_{i=1}^2\hat{p}_{mi}(1-\hat{p}_{mi})=2\hat{p}_{m1}(1-\hat{p}_{m1})$$
+
+2. Classification Error: $$E=1-\max_k(\hat{p}_{mk})=1-\max(\hat{p}_{m1},1-\hat{p}_{m1})=\min(1-\hat{p}_{m1},\hat{p}_{m1})$$
+
+3. Entropy: $$D=-\sum_{i=1}^2\hat{p}_{mi}\log\hat{p}_{mi}=-\hat{p}_{m1}\log\hat{p}_{m1}-(1-\hat{p}_{m1})\log(1-\hat{p}_{m1})$$
+
+We plot their function relationships below:
+
+```{r Chapter 8 Problem 3}
+seq=seq(0, 1, 0.01)
+G=2*seq*(1-seq)
+E=pmin(seq,1-seq)
+D=-seq*log(seq)-(1-seq)*log(1-seq)
+plot(seq,D,ylab="quantity",xlab="\\hat{p}_{m1}")
+lines(seq,E,col="red")
+lines(seq,G,col="blue")
+title("Compaison of the three loss measures")
+```
+
+## Chapter 8 Problem 4
+
+(a) 
+<img src="/Users/IvanYe/Desktop/R/6010S_ML/Ch8Pro4a.jpeg">
+
+(b) 
+<img src="/Users/IvanYe/Desktop/R/6010S_ML/Ch8Pro4b.jpeg">
+

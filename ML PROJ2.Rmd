@@ -1,0 +1,199 @@
+---
+title: "Report of Machine Learning Project 2"
+author: "Yifan YE"
+date: "12/5/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Project 2 Question 1
+
+****** Preprocessing of Data
+
+Implement AdaBoost Algorithm and apply it to the 'Smarket' data set to predict 'Direction'. We first compare the implementation with random forest and gradient boost by simulation and then apply it to real data sets.
+
+```{r packages}
+library(rpart)
+library(randomForest)
+library(gbm)
+library(ISLR)
+```
+
+Here we simulate some data:
+
+```{r simulation}
+set.seed(0)
+n = 2000
+sim = matrix(rnorm(n * 4, mean = 0, sd = 0.5), ncol = 4)
+class = c(rep(1,n/2),rep(2,n/2))
+class = sample(class)
+sim = as.data.frame(sim)
+sim$class = as.factor(class)
+```
+
+We split the data set into training and test sets:
+
+```{r split}
+set.seed(0)
+TestIndex=sample(x=2000,size=200) # randomly sampling
+sim.Training=sim[-TestIndex,] # here and below subsets are related to random seed
+sim.Test=sim[TestIndex,] # these two subsets of original data are all dataframe type now
+```
+
+****** Adaboost Functions
+
+We write a function for implementing Adaboost algorithm:
+
+```{r Adaboost definition}
+adaboostfunc = function(formula, data, M){
+  formula = as.formula(formula)
+  classcolumn = data[, as.character(formula[[2]])]
+  n = length(data[, 1])
+  omega = rep(1/n, n) # step 1 of boosting adaboost algorithm on PPT, initial weights omega
+  prepredict = data.frame(rep(0, n)) # used for keeping predicting values by single trees
+  classlevels = nlevels(classcolumn)
+  treemodels = list() # storing stats models (here are trees) for predicting on test sets
+  treeprop = rep(0, M) # proportions of trees we are going to build
+  for (m in 1:M) {
+    omega <<- omega
+    fit = rpart(formula = formula, data = data, weights = omega) # fit a tree
+    flearn = predict(fit, data = data, type = "class") # predicting results by this tree
+    classmis = as.numeric(classcolumn != flearn) # construct 0-1 vector which indicates misclassifications
+    eps = sum(omega * classmis)/sum(omega) # step 2(b) of boosting adaboost algorithm on PPT, compute epsilon
+    alpha = log((1 - eps)/eps) # step 2(b) of boosting adaboost algorithm on PPT, compute proportion of trees
+    omega = omega * exp(alpha * classmis) # step 2(c) of boosting adaboost algorithm on PPT, update weights
+    alter = 0.005
+    if (eps >= 0.5) { omega = rep(1/n, n); alpha = 0 } # epsilon too high
+    if (eps == 0) { omega = rep(1/n, n); alpha = 10 } # epsilon too low
+    treemodels[[m]] = fit
+    treeprop[m] = alpha # proportion for this tree
+    if (m == 1) { prepredict = flearn }
+    else { prepredict = data.frame(prepredict, flearn) } # construct prediction matrix by those trees
+  } # the end of fitting all M trees  
+  classscore = array(0, c(n, classlevels)) # classification results for every sample by every classifier
+  for (i in 1:classlevels) {
+    classscore[, i] = matrix(as.numeric(prepredict == levels(classcolumn)[i]), nrow = n) %*% as.vector(treeprop)
+  } # loop for every class, classscore[, i] contains all scores for each class of every sample
+  classprob = classscore / apply(classscore, 1, sum) # every row contains probabilities for different classes
+  classpredict = rep("O", n) 
+  classnumber = apply(classscore, 1, FUN = which.max)
+  classpredict = as.factor(levels(classcolumn)[classnumber]) # final prediction results
+  result = list(formula = formula, trees = treemodels, treeproportions = treeprop, 
+             classscores = classscore, classprobability = classprob, classpredict = classpredict)
+  return(result) }
+```
+
+We also need a function to predict:
+
+```{r adaboost predict}
+adaboostpred = function(result, newdata){ # continue from last function, nearly all parts come from last function
+  formula = result$formula
+  classcolumn = newdata[, as.character(formula[[2]])]
+  n = nrow(newdata)
+  treeprop = result$treeproportions
+  alltrees = result$trees
+  prepredict = as.data.frame(sapply(alltrees[1:length(alltrees)], predict, newdata = newdata, type = "class"))
+  classlevels = nlevels(classcolumn)
+  classscore = array(0, c(n, classlevels))
+  for(i in 1:classlevels){
+    classscore[, i] = matrix(as.numeric(prepredict == levels(classcolumn)[i]), nrow = n) %*% as.vector(treeprop)
+  }
+  classprob = classscore / apply(classscore, 1, sum)
+  classnumber = apply(classscore, 1, FUN = which.max)
+  classpredict = as.factor(levels(classcolumn)[classnumber])
+  predresult = list(classpredict = classpredict)
+  return(predresult)
+}
+```
+
+****** Simulated Data Set
+
+Now we use Adaboost to predict:
+
+```{r Adaboost}
+ada.fit=adaboostfunc(class~., data = sim.Training, 100)
+ada.pred = adaboostpred(ada.fit, sim.Test)
+table(ada.pred$classpredict, sim.Test$class)
+a = sum(ada.pred$classpredict == sim.Test$class) / (sum(ada.pred$classpredict != sim.Test$class)+sum(ada.pred$classpredict == sim.Test$class))
+```
+
+The prediction accracy of Adaboost on simulated data is `r a`.
+
+We now use random forest to predict:
+
+```{r random forest}
+rf.fit = randomForest(class~., data = sim.Training)
+rf.pred = predict(rf.fit, newdata = sim.Test)
+table(rf.pred, sim.Test$class)
+b = sum(rf.pred == sim.Test$class) / (sum(rf.pred != sim.Test$class)+sum(rf.pred == sim.Test$class))
+```
+
+The prediction accracy of random forest on simulated data is `r b`.
+
+We now use gradient boost to predict:
+
+```{r gradient boost, fig.show = "hide"}
+gb.fit = gbm(class~., data = sim.Training, distribution = "gaussian", n.trees = 5000, interaction.depth = 4, cv.folds = 5) 
+# immitate textbook page 330
+best = gbm.perf(gb.fit, method="cv")
+gb.pred = predict(gb.fit, newdata = sim.Test, n.trees = best, type="response")
+gb.pred = ifelse(gb.pred >=1.5, 2, 1)
+table(gb.pred, sim.Test$class)
+c = sum(gb.pred == sim.Test$class) / (sum(gb.pred != sim.Test$class)+sum(gb.pred == sim.Test$class))
+```
+
+The prediction accracy of gradient boost on simulated data is `r c`.
+
+****** Real Data Set
+
+For data set "Smarket", we choose 90% as training set and 10% as test set. We remove the variable "Today" because it indicates the trend. If we use "Today" to predict, the result is wrong.
+
+```{r Smarket data}
+attach(Smarket)
+Smarket = subset(Smarket, select = -Today) # we need to remove "Today" because it indicates "Direction"
+names(Smarket)
+summary(Smarket)
+set.seed(0)
+TestIndex=sample(x=nrow(Smarket), size=0.3*nrow(Smarket)) # randomly sampling
+Smarket.Training=Smarket[-TestIndex,] # here and below subsets are related to random seed
+Smarket.Test=Smarket[TestIndex,] # these two subsets of original data are all dataframe type now
+```
+
+Now we use Adaboost to predict:
+
+```{r Adaboost real data}
+adareal.fit=adaboostfunc(Direction~., data = Smarket.Training, 100)
+adareal.pred = adaboostpred(adareal.fit, Smarket.Test)
+table(adareal.pred$classpredict, Smarket.Test$Direction)
+d = sum(adareal.pred$classpredict == Smarket.Test$Direction) / (sum(adareal.pred$classpredict != Smarket.Test$Direction)+sum(adareal.pred$classpredict == Smarket.Test$Direction))
+```
+
+The prediction accracy of Adaboost on real data is `r d`.
+
+We now use random forest to predict:
+
+```{r random forest real data}
+rfreal.fit = randomForest(Direction~., data = Smarket.Training)
+rfreal.pred = predict(rfreal.fit, newdata = Smarket.Test)
+table(rfreal.pred, Smarket.Test$Direction)
+e = sum(rfreal.pred == Smarket.Test$Direction) / (sum(rfreal.pred != Smarket.Test$Direction)+sum(rfreal.pred == Smarket.Test$Direction))
+```
+
+The prediction accracy of random forest on real data is `r e`.
+
+We now use gradient boost to predict:
+
+```{r gradient boost real data, fig.show = "hide"}
+gbreal.fit = gbm(Direction~., data = Smarket.Training, distribution = "gaussian", n.trees = 5000, interaction.depth = 4, cv.folds = 5) 
+# immitate textbook page 330
+best = gbm.perf(gbreal.fit, method="cv")
+gbreal.pred = predict(gbreal.fit, newdata = Smarket.Test, n.trees = best, type="response")
+gbreal.pred = ifelse(gbreal.pred >=1.5, 'Up', 'Down')
+table(gbreal.pred, Smarket.Test$Direction)
+f = sum(gbreal.pred == Smarket.Test$Direction) / (sum(gbreal.pred != Smarket.Test$Direction)+sum(gbreal.pred == Smarket.Test$Direction))
+```
+
+The prediction accracy of gradient boost on real data is `r f`. 

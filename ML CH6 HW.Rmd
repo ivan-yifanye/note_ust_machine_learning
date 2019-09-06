@@ -1,0 +1,88 @@
+---
+title: "Machine Learning Chapter 6 Homework"
+author: "Yifan YE"
+date: "11/4/2018"
+output: html_document
+---
+## Chapter 6 Problem 1
+(a) Compared to the other two stepwise methods, best subset selection method has the smallest training RSS. Because technically, forward stepwise selection and backward stepwise selection are selecting models from a smaller range of subsets (every step is related to the previous model) compared to best subset selection method. So their results may not have the smallest training RSS compared to best subset selection method.
+
+(b) Acoording to the textbook, we can use different kinds of cross-validation method to find a model which may have the lowest test RSS in each methods. Under this circumstance, best subset selection still have superiority to the other two because it considers more cases (all the subsets) than the other methods. Normally, forward stepwise selection and backward stepwise selection may have a little bigger test RSS than best subset selection method.
+
+(c) I will present True or False to the following 5 statements and briefly introduce why:
+
+(i). True. Because in forward stepwise selection, every step is based on the previous model and add one variable.
+
+(ii). True. Because in backward stepwise selection, every step is based on the previous model and subtract one variable.
+
+(iii). False. Because these two methods are actually not related to each other in corresponding steps. So the k-variable model in backward stepwise are not a subset of the (k + 1)-variable model in forward stepwise.
+
+(iv). False. Because these two methods are actually not related to each other in corresponding steps. So the k-variable model in forward stepwise are not a subset of the (k + 1)-variable model in backward stepwise.
+
+(v). False. Because best subset selection method is not stepwise, so normally there is no nested relationship between subsets. 
+
+## Chapter 6 Problem 2
+(a) My choice is (iii). According to the textbook: "As $\lambda$ increases, the flexibility of the lasso regression fit decreases, leading to decreased variance but increased bias." I think it is because the lasso method is equivalent to the restriction $\sum_{j=1}^p|\beta_j|\leq s$, which makes the flexibility (degree of freedom) decrease. Besides, the model bias increases because of the decrease of flexibility and variance decreases due to the same reason. And this means a more accurate choice of model which have a smaller "modified" RSS, so when its increase in bias is less than its decrease in variance, the prediction accuracy increases. 
+
+(b) My choice is (iii). According to the textbook: "As $\lambda$ increases, the flexibility of the ridge regression regression fit decreases, leading to decreased variance but increased bias." I think it is because the ridge regression method is equivalent to the restriction $\sum_{j=1}^p\beta_j^2\leq s$, which makes the flexibility (degree of freedom) decrease. Besides, the model bias increases because of the decrease of flexibility and variance decreases due to the same reason. And this means a more accurate choice of model which have a smaller "modified" RSS, so when its increase in bias is less than its decrease in variance, the prediction accuracy increases. 
+
+(c) My choice is (ii). The model is contrary to former two models, non-linear model has higher flexibility, which leads to a decrease in bias and a increase in variance. So when its increase in variance is less than its decrease in bias, the prediction accuracy increases. 
+
+## Chapter 6 Problem 3
+This is the Lasso method.
+
+(a) My choice is (iv). As we increase s from 0, the training RSS decreases due to the increase of degree of freedom (flexibility). 
+
+(b) My choice is (ii). As we increase s from 0, the test RSS shows a U-shape figure. Because the flexibility of the model will increase at first which leads to more accuracy but then we may overfit the model, when we overfit the training data, the test MSE will be very large.
+
+(c) My choice is (iii). As we increase s from 0, the variance increases due to the increase of degree of freedom (flexibility).
+
+(d) My choice is (iv). As we increase s from 0, the bias decreases due to the increase of degree of freedom (flexibility).
+
+(e) My choice is (v). As we increase s from 0, the irreducible error remain a constant (irreducible error is not related to the model variation).
+
+## Chapter 6 Problem 4
+This is the ridge regression method.
+
+(a) My choice is (iii). As we increase $\lambda$ from 0, the training RSS increases due to the decrease of degree of freedom (flexibility). 
+
+(b) My choice is (ii). As we increase $\lambda$ from 0, the test RSS shows a U-shape figure. Because the flexibility of the model will increase at first which leads to more accuracy but then we may overfit the model, when we overfit the training data, the test MSE will be very large.
+
+(c) My choice is (iv). As we increase $\lambda$ from 0, the variance decreases due to the decrease of degree of freedom (flexibility).
+
+(d) My choice is (iii). As we increase $\lambda$ from 0, the bias increases due to the decrease of degree of freedom (flexibility).
+
+(e) My choice is (v). As we increase $\lambda$ from 0, the irreducible error remain a constant (irreducible error is not related to the model variation).
+
+## Chapter 6 Problem 7
+(a) Because the conditional distribution of $y_i$ is $N(\beta_0+\sum_{j=1}^px_{ij}\beta_{j},\sigma^2)$. So the likelihood function is presented by $$\prod_{i=1}^nf(y_i|x_i,\beta)=\prod_{i=1}^n\dfrac{1}{\sqrt{2\pi}\sigma}\exp\{-\dfrac{{[y_i-(\beta_0+\sum_{j=1}^px_{ij}\beta_{j})]^2}}{2\sigma^2}\}$$. 
+
+(b) Because $\beta$ is double exponential distributed, the density function of each $\beta_j$ is $p(\beta_j)=\frac{1}{2b}\exp\{-\frac{|\beta_j|}{b}\}$, combined with Bayesian formula showed in the textbook:
+$$f(\beta|X,Y)\propto f(Y|X,\beta)p(\beta|X)=f(Y|X,\beta)p(\beta)$$
+so the posterior for $\beta$ is:
+$$\begin{aligned}
+&(\prod_{i=1}^n\dfrac{1}{\sqrt{2\pi}\sigma}\exp\{-\dfrac{{[y_i-(\beta_0+\sum_{j=1}^px_{ij}\beta_{j})]^2}}{2\sigma^2}\})*\frac{1}{2b}\exp\{-\frac{\sum_{j=1}^{p}|\beta_j|}{b}\}\\
+=&\dfrac{1}{2b(\sqrt{2\pi}\sigma)^n}\exp\{-\dfrac{{\sum_{i=1}^n[y_i-(\beta_0+\sum_{j=1}^px_{ij}\beta_{j})]^2}}{2\sigma^2}-\frac{\sum_{j=1}^{p}|\beta_j|}{b}\}
+\end{aligned}$$
+
+(c) If we want to find the mode for $\beta$ under the above posterior distribution. We have to maximize the posterior likelihood function (this is what 'mode' means). In accordance with practice, we take a log function to derive the log likelihood function:
+$$-\log(2b)-n\log(\sqrt{2\pi}\sigma)-\dfrac{{\sum_{i=1}^n[y_i-(\beta_0+\sum_{j=1}^px_{ij}\beta_{j})]^2}}{2\sigma^2}-\frac{\sum_{j=1}^{p}|\beta_j|}{b}$$
+The formula above can be turned into a problem which aims to find the minimun (take negative sign and abandon constants) of the following:
+$${\sum_{i=1}^n[y_i-(\beta_0+\sum_{j=1}^px_{ij}\beta_{j})]^2}+\frac{2\sigma^2}{b}\sum_{j=1}^{p}|\beta_j|$$
+The first part in above formula is the RSS of the model, and the second term is the penalty term if we view $\frac{2\sigma^2}{b}$ as tunning parameter $\lambda$. We notice that the solution to above minimization problem is the mode we need, and at the same time it is the Lasso estimate as we explained above.
+
+(d) First we need to change some gradients in part (b) because we have replaced the prior distribution and get a new posterior:
+$$\begin{aligned}
+&(\prod_{i=1}^n\dfrac{1}{\sqrt{2\pi}\sigma}\exp\{-\dfrac{{[y_i-(\beta_0+\sum_{j=1}^px_{ij}\beta_{j})]^2}}{2\sigma^2}\})*(\prod_{j=1}^p\dfrac{1}{\sqrt{2\pi c}}\exp\{-\dfrac{{\beta_j^2}}{2c}\}\})\\
+=&\dfrac{1}{(\sqrt{2\pi c})^p(\sqrt{2\pi}\sigma)^n}\exp\{-\dfrac{{\sum_{i=1}^n[y_i-(\beta_0+\sum_{j=1}^px_{ij}\beta_{j})]^2}}{2\sigma^2}-\frac{\sum_{j=1}^{p}\beta_j^2}{2c}\}
+\end{aligned}$$
+
+(e) 
+
+First, if we want to find the mode for $\beta$ under the above new posterior distribution. We have to maximize the new posterior likelihood function (this is what 'mode' means). In accordance with practice, we take a log function to derive the log likelihood function:
+$$-p\log(\sqrt{2\pi c})-n\log(\sqrt{2\pi}\sigma)-\dfrac{{\sum_{i=1}^n[y_i-(\beta_0+\sum_{j=1}^px_{ij}\beta_{j})]^2}}{2\sigma^2}-\frac{\sum_{j=1}^{p}\beta_j^2}{2c}$$
+The formula above can be turned into a problem which aims to find the minimun (take negative sign and abandon constants) of the following:
+$${\sum_{i=1}^n[y_i-(\beta_0+\sum_{j=1}^px_{ij}\beta_{j})]^2}+\frac{\sigma^2}{c}\sum_{j=1}^{p}\beta_j^2$$
+The first part in above new formula is the RSS of the model, and the second term is the penalty term if we view $\frac{\sigma^2}{c}$ as tunning parameter $\lambda$. We notice that the solution to above minimization problem is the mode we need, and at the same time it is the ridge regression estimate as we explained above.
+
+Second, we need to show the mean for $\beta$ under this new posterior distribution is also in accordance with ridge regression estimate. We all know that for a Gaussian distribution $N(\mu,\sigma^2)$ the mean is $\mu$ and the mode (biggest density) is also $\mu$, so in our case the mode is also mean under this new posterior distribution dut to it is a Gaussian distribution. All things have been proved so far.

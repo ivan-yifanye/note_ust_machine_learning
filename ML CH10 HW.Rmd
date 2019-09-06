@@ -1,0 +1,110 @@
+---
+title: "Machine Learning Chapter 10 Homework"
+author: "Yifan YE"
+date: "11/24/2018"
+output: html_document
+---
+## Chapter 10 Problem 10
+
+(a) The textbook requires us to generate a simulated data set with 20 observations in each of three classes (i.e. 60 observations total), and 50 variables.
+
+```{r Chapter 10 Problem 10 a1}
+# simulate several data at the beginning
+set.seed(1)
+data=matrix(rnorm(20*3*50,mean=0,sd=0.005),nrow=2*30,ncol=50)
+plot(data)
+```
+
+We need to add shifts to those data to make them distinct.
+
+```{r Chapter 10 Problem 10 a2}
+# split them
+data[1:20,1]=data[1:20,1]+1
+data[41:60,1]=data[41:60,1]+1
+data[41:60,2]=data[41:60,2]+1
+data[21:40,2]=data[21:40,2]+1
+plot(data)
+```
+
+(b) The textbook requires us to Perform PCA on the 60 observations and plot the first two principal component score vectors. Besides, we need to assign different colors to different groups.
+
+```{r Chapter 10 Problem 10 b1}
+# PCA 
+pr.out=prcomp(data,scale=FALSE)
+names(pr.out)
+summary(pr.out)
+```
+
+```{r Chapter 10 Problem 10 b2}
+# score vectors
+pr.out$x[,1:2]
+color0=floor((pr.out$x[,1])*4+0.5)+4 # assign different colors to different groups
+plot(pr.out$x[,1:2],col=color0,xlab="Z1 Score",ylab="Z2 Score",pch=19) 
+```
+
+We can see from above that these two PCs are fully separated.
+
+(c) The textbook requires us to Perform K-means clustering of the observations with K = 3. Here we set a proper random seed to make the group numbers match.
+
+```{r Chapter 10 Problem 10 c}
+# K-means Clustering, K=3
+set.seed(12)
+km.out=kmeans(data,3,nstart=20)
+km.out$cluster
+table(km.out$cluster,c(rep(1,20),rep(2,20),rep(3,20)))
+plot(data,col=(km.out$cluster+1),main="K-Means Clustering Results with K=3",xlab="",ylab="",pch=20,cex=2)
+```
+
+The data is correctly separated when K=3.
+
+(d) The textbook requires us to Perform K-means clustering of the observations with K = 2. 
+
+```{r Chapter 10 Problem 10 d}
+# K-means Clustering, K=2
+set.seed(12)
+km.out=kmeans(data,2,nstart=20)
+km.out$cluster
+table(km.out$cluster,c(rep(1,20),rep(2,20),rep(3,20)))
+plot(data,col=(km.out$cluster+1),main="K-Means Clustering Results with K=2",xlab="",ylab="",pch=20,cex=2)
+```
+
+The data is not correctly separated when K=2. We can see that the group on the right head and right bottom are assigned to the same group.
+
+(e) The textbook requires us to Perform K-means clustering of the observations with K = 4. 
+
+```{r Chapter 10 Problem 10 e}
+# K-means Clustering, K=4
+set.seed(12)
+km.out=kmeans(data,4,nstart=20)
+km.out$cluster
+table(km.out$cluster,c(rep(1,20),rep(2,20),rep(3,20)))
+plot(data,col=(km.out$cluster+1),main="K-Means Clustering Results with K=4",xlab="",ylab="",pch=20,cex=2)
+```
+
+The data is not correctly separated when K=4. We can see that the group on the right bottom is assigned to two different groups splitly.
+
+(f) Now perform K-means clustering with K = 3 on the first two principal component score vectors, rather than on the raw data.
+
+```{r Chapter 10 Problem 10 f}
+# K-means Clustering to PCs, K=3
+set.seed(12)
+km.out=kmeans(pr.out$x[,1:2],3,nstart=20)
+km.out$cluster
+table(km.out$cluster,c(rep(1,20),rep(2,20),rep(3,20)))
+plot(pr.out$x[,1:2],col=(km.out$cluster+1),main="K-Means Clustering Results with K=3 to PCs",xlab="",ylab="",pch=20,cex=2)
+```
+
+In this case the PCs are also perfectly separated.
+
+(g) The textbook requires us to Perform K-means clustering of the observations with K = 3 after sclaing. 
+
+```{r Chapter 10 Problem 10 g}
+# K-means Clustering, K=3, after scaling
+set.seed(12)
+km.out=kmeans(scale(data),3,nstart=20)
+km.out$cluster
+table(km.out$cluster,c(rep(1,20),rep(2,20),rep(3,20)))
+plot(scale(data),col=(km.out$cluster+1),main="K-Means Clustering Results with K=3 after scaling",xlab="",ylab="",pch=20,cex=2)
+```
+
+We can see that the result of classification is poor compared to previous result. Because after scaling, the distances between different points are changed. They become very close to each other so that we can not distinct them. Or we can say that we do not fully undertand every feature of the data, so sometimes we indeed affect their features by doing standarization to the data, this is why the clustering to the scaled data is different to the original method.

@@ -1,0 +1,76 @@
+---
+title: "Report of Machine Learning Project 1 Question 2"
+author: "Yifan YE"
+date: "11/13/2018"
+output: html_document
+---
+## Question 2---X and y
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE,warning=FALSE,message=FALSE)
+```
+
+We notice that the number of samples (n=2000) is far less than the number of predict variables or degree of freedom (p=10000). According to the textbook, a simple least squares regression line is too flexible and hence overfits the data. So we have to avoid using it and choose some other dimensional reduction methods.
+
+## Part 1. Preprocessing of the Data
+
+```{r loading packages}
+library(car)
+library(boot)
+library(leaps)
+library(glmnet)
+library(pls)
+library(gam)
+```
+
+```{r Loading Data}
+y=read.table("y.txt",header=F)
+X=read.table("X.txt",header=F)
+X.Mx=as.matrix(X)
+y.Mx=as.matrix(y)
+dim(y)
+dim(X)
+names(y)="V0"
+```
+
+## Part 2. Ridge Regression
+
+Because $n<<p$, so OLS cannot find a unique and effective solution. We have to use some dimensional reduction methods. First we try ridge regression.
+
+```{r compute the tunning parameter and predict (Ridge)}
+set.seed(0)
+cv.out=cv.glmnet(X.Mx,y.Mx,alpha=0,parallel=TRUE)
+plot(cv.out)
+bestlam=cv.out$lambda.min
+ridge.model=glmnet(X.Mx,y.Mx,alpha=0,lambda=bestlam,thresh=1e-12)
+bestlam
+cv.out$lambda[which.min(cv.out$cvm)]
+min(cv.out$cvm)
+```
+
+From the result above we know that the best $\lambda$ we should choose is 206.389 and the corresponding CV MSE is 1872.744. 
+
+## Part 3. Lasso
+
+Another way is to use Lasso.
+
+```{r compute the tunning parameter and predict (Lasso)}
+set.seed(0)
+cv.out=cv.glmnet(X.Mx,y.Mx,alpha=1,parallel=TRUE)
+plot(cv.out)
+bestlam=cv.out$lambda.min
+Lasso.mod=glmnet(X.Mx,y.Mx,alpha=1,lambda=bestlam,thresh=1e-12)
+bestlam
+cv.out$lambda[which.min(cv.out$cvm)]
+min(cv.out$cvm)
+```
+
+From the result above we know that the best $\lambda$ we should choose is 2.428811 and the corresponding CV MSE is 1947.72. 
+
+## Part 4. Discussion for Choosing models
+
+Actually, the ridge regression shows that real model should be far from linear because the best choice is that $\lambda=206.389$. So PCA will not be effective because PCA is just regression for linear combinations. Neither does PLS.
+
+## Part 5. Conclusion
+
+Comparing the above two methods, we notice that ridge regression's CV MSE is 1872.744 and Lasso's CV MSE is 1947.72. They are very close to each other. In the end, we choose ridge regression with $\lambda=206.389$ to be our desired model.

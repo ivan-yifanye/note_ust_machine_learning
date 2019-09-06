@@ -1,0 +1,201 @@
+---
+title: "Machine Learning Chapter 7 Homework"
+author: "Yifan YE"
+date: "11/5/2018"
+output: html_document
+---
+## Chapter 7 Problem 1
+(a) The spline function is presented by $f(x)=\beta_0+\beta_1x+\beta_2x^2+\beta_3x^3+\beta_4(x-\xi)_+^3$. We want to find a cubic polynomial $f_1(x)=a_1+b_1x+c_1x^2+d_1x^3$ to express it in the case of $x\leq \xi$. In this case, $(x-\xi)_+^3=0$, so we derive that $$a_1=\beta_0, b_1=\beta_1, c_1=\beta_2, d_1=\beta_3$$
+
+(b) The spline function is presented by $f(x)=\beta_0+\beta_1x+\beta_2x^2+\beta_3x^3+\beta_4(x-\xi)_+^3$. We want to find a cubic polynomial $f_2(x)=a_2+b_2x+c_2x^2+d_2x^3$ to express it in the case of $x> \xi$. In this case, $(x-\xi)_+^3=(x-\xi)^3=x^3-3\xi x^2+3\xi^2x-\xi^3$. So the spline function is newly presented by $f(x)=\beta_0+\beta_1x+\beta_2x^2+\beta_3x^3+\beta_4(x^3-3\xi x^2+3\xi^2x-\xi^3)$. So we derive that $$a_2=\beta_0-\beta_4\xi^3, b_2=\beta_1+3\beta_4\xi^2, c_2=\beta_2-3\beta_4\xi, d_2=\beta_3+\beta_4$$
+
+(c) From above formulas, $$f_1(\xi)=\beta_0+\beta_1\xi+\beta_2\xi^2+\beta_3\xi^3$$ and $$f_2(\xi)=(\beta_0-\beta_4\xi^3)+(\beta_1+3\beta_4\xi^2)\xi+(\beta_2-3\beta_4\xi)\xi^2+(\beta_3+\beta_4)\xi^3=\beta_0+\beta_1\xi+\beta_2\xi^2+\beta_3\xi^3$$, so $f_1(\xi)=f_2(\xi)$, $f(x)$ is continuous at $\xi$.
+
+(d) From above formulas we take the 1st order derivative and get: $$f_1'(\xi)=\beta_1+2\beta_2\xi+3\beta_3\xi^2$$ and $$f_2'(\xi)=(\beta_1+3\beta_4\xi^2)+2(\beta_2-3\beta_4\xi)\xi+3(\beta_3+\beta_4)\xi^2=\beta_1+2\beta_2\xi+3\beta_3\xi^2$$, so $f_1'(\xi)=f_2'(\xi)$, $f'(x)$ is continuous at $\xi$.
+
+(e) From above formulas we take the 2nd order derivative and get:
+$$f_1''(\xi)=2\beta_2+6\beta_3\xi$$ and $$f_2''(\xi)=2(\beta_2-3\beta_4\xi)+6(\beta_3+\beta_4)\xi=2\beta_2+6\beta_3\xi$$, so $f_1''(\xi)=f_2''(\xi)$, $f''(x)$ is continuous at $\xi$. Therefore, $f(x)$ is indeed a cubic spline.
+
+## Chapter 7 Problem 2
+(a) When $\lambda=\infty$, the penalty term must be close to zero if we want to minimize the object function, so we derive that $[g^{(0)}(x)]^2=[g(x)]^2=0$, so $g(x)=0$ would minimize the object function.
+
+(b) When $\lambda=\infty$, the penalty term must be close to zero if we want to minimize the object function, so we derive that $[g^{(1)}(x)]^2=[g'(x)]^2=0$, so $g'(x)=0$, which means $g(x)=constant$, would minimize the object function.
+
+(c) When $\lambda=\infty$, the penalty term must be close to zero if we want to minimize the object function, so we derive that $[g^{(2)}(x)]^2=[g''(x)]^2=0$, so $g''(x)=0$, which means $g(x)=Ax+B$ (a straight line), would minimize the object function.
+
+(d) When $\lambda=\infty$, the penalty term must be close to zero if we want to minimize the object function, so we derive that $[g^{(3)}(x)]^2=[g'''(x)]^2=0$, so $g'''(x)=0$, which means $g(x)=Ax^2+Bx+C$ (a parabola), would minimize the object function.
+
+(e) When $\lambda=0$, the penalty term vanishes, so the model degenerate to minimize $\sum_{i=1}^n(y_i-g(x_i))^2$. In this case, the function $g$ exactly interpolate the training observation data. For example, $g$ can be chosen to be the Lagrange interpolation polynomial whcih passes through all $(x_i,y_i),i=1,...,n$:
+$$g(x)=\sum_{i=1}^ny_i\prod_{j\neq i}\dfrac{x-x_j}{x_i-x_j}$$
+
+## Chapter 7 Problem 3
+According to given conditions, $b_1(X)=X, b_2(X)=(X-1)^2I(X\geq 1)$ and the linear regression model $Y=\beta_0+\beta_1b_1(X)+\beta_2b_2(X)+\varepsilon$. The estimated coefficients are $\hat{\beta_0}=1,\hat{\beta_1}=1,\hat{\beta_2}=-2$. So the estimated curve is: $Y=1+X-2(X-1)^2I(X\geq 1)$, we present the plot below:
+```{r}
+x=seq(-2,2,0.01)
+y=1+x-2*(x-1)^2*I(x>1)
+plot(x,y,"l")
+```
+
+
+## Chapter 7 Problem 5
+(a) As we have discussed before, the $\lambda\int [g^{(m)}(x)]^2\mathrm{d}x$ ends up with a (m-1)th order polynomial ($g^{(m)}(x)=0$) when $\lambda$ tends to $\infty$. So $\lambda\int [g^{(3)}(x)]^2\mathrm{d}x$ ends up with a 2nd order polynomial (parabola) and $\lambda\int [g^{(4)}(x)]^2\mathrm{d}x$ ends up with a 3rd order polynomial. So $\hat{g_2}$ have the smaller training RSS because the corresponding 3rd order polynomial has higher flexibility than 2nd order polynomial ($\hat{g_1}$).
+
+(b) According to the textbook, in this case g will be perfectly smooth. So it depends on the relative location of these two cases in the plot of test RSS (U-shape plot). Here we can not get a certain conclusion on them.
+
+(c) when $\lambda = 0$, two models coincide, so $\hat{g_1}=\hat{g_2}$ and these two will have the same training and test RSS.
+
+## Chapter 7 Problem 6
+(a) We will perform polynomial regression to predict wage using age and use cross-validation to select the optimal degree d for the polynomial. By textbook, "we will perform linear regression using the glm() function rather than the lm() function because the former can be used together with cv.glm()." Here we use 5-fold CV.
+```{r}
+library(ISLR)
+library(boot)
+attach(Wage)
+set.seed(1)
+cv.error=rep(0,10)
+for(i in 1:10){
+glm.fit=glm(wage~poly(age,i),data=Wage)
+cv.error[i]=cv.glm(Wage,glm.fit,K=5)$delta[1]
+}
+plot(1:10,cv.error,xlab="Order of Polynomial",ylab="CV error",type="l")
+min=min(cv.error)
+std=sd(cv.error)
+abline(h=min+0.1*std,col="red")
+legend("topright","0.1 std",lty="solid",col="red")
+```
+As we can see from above data, if we allow some deviation from the minimum, then we can choose the order of polynomial to be 4, because it is the simplest among models that satisfies the requirement. On the other hand, if we use ANOVA to determine the degree we want, we do it using following steps:
+```{r}
+fit.1=lm(wage~age,data=Wage)
+fit.2=lm(wage~poly(age,2),data=Wage)
+fit.3=lm(wage~poly(age,3),data=Wage)
+fit.4=lm(wage~poly(age,4),data=Wage)
+fit.5=lm(wage~poly(age,5),data=Wage)
+fit.6=lm(wage~poly(age,6),data=Wage)
+fit.7=lm(wage~poly(age,7),data=Wage)
+fit.8=lm(wage~poly(age,8),data=Wage)
+fit.9=lm(wage~poly(age,9),data=Wage)
+fit.10=lm(wage~poly(age,10),data=Wage)
+anova(fit.1,fit.2,fit.3,fit.4,fit.5,fit.6,fit.7,fit.8,fit.9,fit.10)
+```
+Notice that 2nd, 3rd and 4th are all necessary, so we choose the order of polynomial to be 4. Then we make a plot of the resulting 4rd polynomial fit to the data (we use symbols in textbook):
+```{r}
+agelims=range(Wage$age)
+age.grid=seq(from=agelims[1],to=agelims[2])
+lm.pred=predict(fit.4,data.frame(age=age.grid))
+plot(wage~age,data=Wage)
+lines(age.grid,lm.pred,col="red",lwd=4)
+```
+
+(b) Fit a step function.
+```{r}
+set.seed(1)
+cv1.error=rep(0,10)
+for(i in 2:10){
+  Wage$age.cut=cut(Wage$age,i)
+  fit.step=glm(wage~age.cut,data=Wage)
+  cv1.error[i]=cv.glm(Wage,fit.step,K=5)$delta[1]
+}
+plot(2:10,cv.error[-1],xlab="No. of knots",ylab="CV error",type="l")
+min=min(cv.error)
+std=sd(cv.error)
+legend("topright","0.1 std",lty="solid",col="red")
+```
+From the plot above, 5 knots is the final choice. Then we make a plot of the resulting 5 knots step function fit to the data (we use symbols in textbook):
+```{r}
+lm.fit=glm(wage~cut(age,5),data=Wage)
+agelims=range(Wage$age)
+age.grid=seq(from=agelims[1],to=agelims[2])
+lm.pred=predict(lm.fit,data.frame(age=age.grid))
+plot(wage~age,data=Wage)
+lines(age.grid,lm.pred,col="red",lwd=4)
+```
+
+## Chapter 7 Problem 7
+We are required to explore the relationships between some of these other predictors and 'wage',use non-linear fitting techniques.
+```{r}
+plot(Wage$year,Wage$wage)
+plot(Wage$maritl,Wage$wage)
+plot(Wage$race,Wage$wage)
+plot(Wage$education,Wage$wage)
+plot(Wage$region,Wage$wage)
+plot(Wage$jobclass,Wage$wage)
+plot(Wage$health,Wage$wage)
+```
+```{r}
+set.seed(1)
+library(gam)
+fit01=gam(wage~maritl+year+race+education+jobclass+health+s(age,5),data=Wage)
+summary(fit01)
+par(mfrow=c(2, 4))
+plot(fit01,se=T,col="red")
+```
+
+## Chapter 7 Problem 10
+(a) Split the data into a training set and a test set and perform forward stepwise selection on the training set.
+```{r}
+set.seed(1)
+attach(College)
+x=1:nrow(College)
+set.seed(3)
+c=sample(x=x,size=nrow(College)/2)
+College_Training=College[c,]
+College_Validation=College[-c,]
+library(leaps)
+regfit.fwd=regsubsets(Outstate~.,data=College,nvmax=19,method="forward")
+reg.summary=summary(regfit.fwd)
+names(reg.summary)
+reg.summary$adjr2
+plot(reg.summary$adjr2,xlab="Number of Variables",ylab="Adjusted RSquare",type="l")
+points(which.max(reg.summary$adjr2),reg.summary$adjr2[which.max(reg.summary$adjr2)],col="blue",cex=2)
+max.AdjR2=max(reg.summary$adjr2)
+std.AdjR2=sd(reg.summary$adjr2)
+abline(h=max.AdjR2-0.1*std.AdjR2,col="red",lty=2)
+```
+```{r}
+set.seed(1)
+reg.summary$cp
+plot(reg.summary$cp,xlab="Number of Variables",ylab="Cp",type="l")
+points(which.min(reg.summary$cp),reg.summary$cp[which.min(reg.summary$cp)],col="blue",cex=2)
+min.cp=min(reg.summary$cp)
+std.cp=sd(reg.summary$cp)
+abline(h=min.cp+0.1*std.cp,col="red",lty=2)
+```
+```{r}
+set.seed(1)
+reg.summary$bic
+plot(reg.summary$bic,xlab="Number of Variables",ylab="BIC",type="l")
+points(which.min(reg.summary$bic),reg.summary$bic[which.min(reg.summary$bic)],col="blue",cex=2)
+min.bic=min(reg.summary$bic)
+std.bic=sd(reg.summary$bic)
+abline(h=min.bic+0.1*std.bic,col="red",lty=2)
+```
+All three kinds of categories go to 10 variables.
+
+(b) Fit a GAM on the training data.
+```{r}
+summary(regfit.fwd)
+```
+
+```{r}
+set.seed(1)
+fitCLG=gam(Outstate~Private+s(Accept,df=5)+s(Room.Board,df=5)+s(Personal,df=5)+s(PhD,df=5)+s(Terminal,df=5)+s(S.F.Ratio,df=5)+s(perc.alumni,df=5)+s(Expend,df=5)+s(Grad.Rate,df=5),data=Wage)
+par(mfrow=c(3,4))
+plot(fitCLG,se=T,col="red")
+```
+
+(c) Evaluate the model obtained on the test set.
+```{r}
+set.seed(1)
+predCLG=predict(fitCLG,College_Validation)
+rssCLG=mean((College_Validation$Outstate-predCLG)^2)
+tssCLG=mean((College_Validation$Outstate-mean(College_Validation$Outstate))^2)
+R2CLG=1-rssCLG/tssCLG
+R2CLG
+```
+$R^2$ of the model is 0.8201947. It's a quite good result.
+
+(d) Explore the non-linear relationsip between predict variables and the response.
+```{r}
+set.seed(1)
+summary(fitCLG)
+```
+We can just look at the p-values of nonparametric tests and we can find that "Accept", "Room.Board", "Personal", "PhD", "S.F.Ratio", "Expend" and "Grad.Rate" have significant non-linear relationship with the response. 

@@ -1,0 +1,298 @@
+---
+title: "Machine Learning Chapter 4 Homework"
+author: "Yifan YE"
+date: "10/10/2018"
+output: html_document
+---
+## Chapter 4 Problem 1
+(4.2) shows 
+$$p(X)=\frac{e^{\beta_0+\beta_1X}}{1+e^{\beta_0+\beta_1X}}$$
+If we assume 
+$$Y=e^{\beta_0+\beta_1X}$$
+then 
+$$p(X)=\frac{Y}{1+Y}$$
+moreover we can derive 
+$$p(X)(1+Y)=Y, Y=\frac{p(X)}{1-p(X)}$$
+which means 
+$$\frac{p(X)}{1-p(X)}=e^{\beta_0+\beta_1X}$$
+as (4.3) shows.
+
+## Chapter 4 Problem 2
+We just need to take log function to each side of (4.12) and we can get: 
+$$\log{p_k(x)}=\log{\pi_k}-\log{\sqrt{2\pi}\sigma}-\frac{1}{2\sigma^2}(x-\mu_k)^2-\log{(\sum_{l=1}^K\pi_l\frac{1}{\sqrt{2\pi}\sigma}\exp(-\frac{1}{2\sigma^2}(x-\mu_l)^2))}$$
+Notice that the last term is the same for every $k\in\{1,2...K\}$ and $\log{\sqrt{2\pi}\sigma}$ is a constant. So when we compare each pair of $p_k(x)$ (or $\log{p_k(x)}$), we can omit these two terms and just compare other remained terms. We write the remained terms as $q_k(x)$:
+$$q_k(x)=\log{\pi_k}-\frac{1}{2\sigma^2}(x-\mu_k)^2$$
+So now the comparision among $p_k(x)$s becomes comparision among $q_k(x)$s. Then we expand the expression and get:
+$$q_k(x)=\log{\pi_k}-\frac{1}{2\sigma^2}x^2+\frac{1}{\sigma^2}x\mu_k-\frac{1}{2\sigma^2}\mu_k^2$$
+Notice that for every $k\in\{1,2...K\}$ and a fixed $x$, $-\frac{1}{2\sigma^2}x^2$ is the same, so we just meed to compare other remained terms. We write the remained terms as $\delta_k(x)$:
+$$\delta_k(x)=\log{\pi_k}+\frac{\mu_k}{\sigma^2}x-\frac{\mu_k^2}{2\sigma^2}$$
+This is exactly the case of (4.13). From what have been proved above, we know the equivalence between $p_k(x)$'s comparision and $\delta_k(x)$'s comparision. Or put it another way, classifying an observation to the class for which (4.12) is largest is equivalent to classifying an observation to the class for which (4.13) is largest.
+
+## Chapter 4 Problem 3
+An estimate for distribution (normal) can be written as:
+$$f_k(x)=\frac{1}{\sqrt{2\pi}\sigma_k}\exp(-\frac{1}{2\sigma_k^2}(x-\mu_k)^2))$$
+We can quickly see the difference between this case and the case in the previous question, if we still use the similar symbol from the previous question then we get:
+$$\log{p_k(x)}=\log{\pi_k}-\log{\sqrt{2\pi}\sigma_k}-\frac{1}{2\sigma_k^2}(x-\mu_k)^2-\log{(\sum_{l=1}^K\pi_l\frac{1}{\sqrt{2\pi}\sigma_l}\exp(-\frac{1}{2\sigma_l^2}(x-\mu_l)^2))}$$
+The last term is still the same for every $k\in\{1,2...K\}$ but $\log{\sqrt{2\pi}\sigma}$ is no longer the same for them. So we need to compare the following functions:
+$$q_k(x)=\log{\pi_k}-\log{\sqrt{2\pi}\sigma_k}-\frac{1}{2\sigma_k^2}(x-\mu_k)^2$$
+If we expand this we can get:
+$$q_k(x)=\log{\pi_k}-\log{\sqrt{2\pi}\sigma_k}-\frac{1}{2\sigma_k^2}x^2+\frac{1}{\sigma_k^2}x\mu_k-\frac{1}{2\sigma_k^2}\mu_k^2$$
+So finally we have to compare the following functions, we write them as $\delta_k(x)$s:
+$$\delta_k(x)=-\frac{x^2}{2\sigma_k^2}+\frac{\mu_k}{\sigma_k^2}x+(\log{\pi_k}-\log{\sqrt{2\pi}\sigma_k}-\frac{\mu_k^2}{2\sigma_k^2})$$
+This is a quadratic form. So the Bayes’ classifier is not linear and it is in fact quadratic.
+
+## Chapter 4 Problem 4 (Bonus Question)
+(a) We have consider different situations in this case, when $X\in[0.05, 0.95]$, the sample interval is exactly $[X-0.05,X+0.05]$. But, when $X\in[0,0.05]$, the sample interval is reduced to $[0, X+0.05]$. In a similar manner, when $X\in[0.95,1]$, the sample interval is reduced to $[X-0.05,1]$. The corresponding usage are separately $10%, (100X+5)%$ and $(105-100X)%$. So the average fraction can be required by a integral:
+$$\int_0^{0.05}(100X+5)\%dX+\int_{0.05}^{0.95}10\%dX+\int_{0.95}^1(105-100X)\%dX$$
+This is $(0.5^2/2+0.25+9+5.25-(10^2-9.5^2)/2)\%$, and it equals to 9.75%.
+
+(b) Because the algorithm requires using only observations that are within 10% of the range of X1 and within 10% of the range of X2 closest to that test observation, separately. So we can transplant our result in 1D to 2D by simple multiplicaition. Finally we see the fraction of the available observations is (9.75%)^2=0.950625%, which is a very small number.
+
+(c) By arguments above we know in this case we just need to calculate the 100th power of 9.75%, which is 7.951729e-102, nearly 0.
+
+(d) Because KNN is a local method, which means it only use a part of the whole dataset, when p is very large, the average usage of the data is almost 0%, which means we don't use any information form datas. So this is no doubt leading to a wrong outcome. More mathematically, we can show the effect by observing:
+$$(9.75\%)^p\rightarrow 0, as \,\,p\rightarrow\infty$$
+So as it writes in textbook, "a drawback of KNN when p is large is that there are very few training observations “near” any given test observation", which has been explain above.
+
+(e) Now we wish to make a prediction for a test observation by creating a p-dimensional hypercube centered around the test observation that contains, on average, 10% of the training observations.
+We have to alter the sample interval length we use in 1D case. Suppose we use (2a)% instead of 10%, then the situation becomes: when $X\in[a\%, 1-a\%]$, the sample interval is exactly $[X-a\%,X+a\%]$. But, when $X\in[0,a\%]$, the sample interval is reduced to $[0, X+a\%]$. In a similar manner, when $X\in[1-a\%,1]$, the sample interval is reduced to $[X-a\%,1]$. So the average fraction can be required by a integral:
+$$\int_0^{a\%}(100X+a)\%dX+\int_{a\%}^{1-a\%}10\%dX+\int_{1-a\%}^1(100+a-100X)\%dX$$
+This is equals to:
+$$[a^2/100+(1/2)(a/10)^2+10-(2a/10)+(100+a)a/100-(1/2)(10)^2+(1/2)(10-(a/10))^2]\%$$
+which can be simplified to:
+$$(3*a^2/100-a/5+10)\%$$
+We let it to be 10% and get $a=20/3=6.67$, so the corresponding interval length is 13.33% instead of 10%, because the problem requires a average fraction to be 10%.
+
+So from above we know that we only need to slove a quadratic equation for every $p$. When p=2, we need to solve:
+$$(3*a^2/100-a/5+10)^2(1/100)^2=10/100$$
+which can be simplified to:
+$$3*a^2/100-a/5+10=\sqrt{1000}$$
+and we solve it by following codes:
+```{r}
+#find the positive root
+f <- function(x,a,b,c) a*x^2+b*x+c
+a <- 3/100; b <- (-1)/5; c <- 10-1000^(1/2)
+result <- uniroot(f,c(0,50),a=a,b=b,c=c,tol=0.0001)
+print(result)
+```
+so the solution is $a=30.38644$, so the corresponding interval length is 60.77%.
+
+Moreover, when $p=100$, we have to calculate:
+$$(3*a^2/100-a/5+10)^p(1/100)^p=10/100$$
+or:
+$$3*a^2/100-a/5+10=10^{(2-(1/p))}$$
+and we solve it by following codes (here we take the example of p=8):
+```{r}
+#find the positive root
+a <- 3/100; b <- (-1)/5; c <- 10-10^(15/8)
+result1 <- uniroot(f,c(0,50),a=a,b=b,c=c,tol=0.0001)
+print(result1)
+```
+The reason we choose p=8 is when p is large than 8 this small program fails. But we have seen the increasing tendency of the solution as p increases. In this case we can claim that a is pretty close to 50 (will larger than 49.99, but the limitation is 2a<=100), so the length of cube (2a%) must be pretty much close to 100%, even larger than 98% or 99%, which is not so different to 100%. This is reasonble because we need much more information to get real useful result to avoid curse of dimensionality.
+
+## Chapter 4 Problem 10
+(a) Numerical and graphical summaries of the Weekly data. We analyze this dataset by observing its 'summary', 'pairs' and 'cor'.
+```{r}
+library(ISLR)
+data(Weekly)
+dim(Weekly)
+summary(Weekly)
+pairs(Weekly)
+```
+```{r}
+cor(Weekly[,-9])
+```
+```{r}
+attach(Weekly)
+plot(Volume)
+```
+From figures and charts above, we can see that there was a peak of volume when the index was around 1000. And we find it disapponted to know that there are few correlation between lag1 to lag5. 
+
+(b) Logistic regression.
+```{r}
+glm.fits=glm(Direction~Lag1+Lag2+Lag3+Lag4+Lag5+Volume,data=Weekly,family=binomial)
+summary(glm.fits)
+```
+Yes. As it is shown above, only intercept term and term are significant.
+
+(c) Confusion matrix and overall fraction of correct predictions.
+```{r}
+glm.probs=predict(glm.fits,type ="response")
+contrasts(Direction)
+glm.pred=rep("Down", 1089)
+glm.pred[glm.probs>.5]="Up"
+table(glm.pred, Direction)
+430/(430+54)
+48/(557+48)
+(54+557)/(54+48+430+557)
+```
+The accuracy is 0.56, the error of recognizing up when the real result is down is 0.89 and the error of recognizing down when the real result is up is 0.08.
+
+(d) Using a training data. Logistic Regression.
+```{r}
+train=(Year<2009)
+Weekly.20092010= Weekly[!train, ]
+dim(Weekly.20092010)
+Direction.20092010= Direction[!train,drop=T]
+```
+```{r}
+glm.fits1=glm(Direction~Lag2, data=Weekly, family=binomial, subset=train)
+glm.probs1=predict(glm.fits, Weekly.20092010, type="response")
+glm.pred1=rep ("Down", 104)
+glm.pred1[glm.probs1>.5]="Up"
+glm.pred1=ifelse(glm.probs1>0.5,'Up','Down')
+table(glm.pred1, Direction.20092010)
+26/(17+26)
+13/(13+48)
+(17+48)/(17+48+26+13)
+```
+The overall fraction of correct predictions for the held out data is 0.625.
+
+(e) LDA
+```{r}
+library (MASS)
+lda.fit=lda(Direction~Lag2, data=Weekly, subset=train)
+lda.fit
+```
+```{r}
+lda.pred=predict(lda.fit, Weekly.20092010)
+names(lda.pred)
+```
+```{r}
+lda.class=lda.pred$class
+table(lda.class, Direction.20092010)
+(9+56)/(9+56+34+5)
+```
+The overall fraction of correct predictions for the held out data is 0.625.
+
+(f) QDA
+```{r}
+qda.fit=qda(Direction~Lag1+Lag2, data=Weekly, subset=train)
+qda.fit
+```
+```{r}
+qda.class =predict(qda.fit ,Weekly.20092010)$class
+table(qda.class ,Direction.20092010)
+mean(qda.class == Direction.20092010)
+(7+51)/(7+51+10+36)
+```
+The overall fraction of correct predictions for the held out data is 0.558.
+
+(g) KNN (K=1)
+```{r}
+library(class)
+train.X=Weekly[train,3,drop=F]
+test.X=Weekly[!train,3,drop=F]
+train.Direction=Direction[train]
+test.Direction=Direction[!train]
+set.seed(1)
+knn.pred=knn(train.X, test.X, train.Direction, k=1)
+table(knn.pred, test.Direction)
+(21+31)/(21+31+30+22)
+```
+The overall fraction of correct predictions for the held out data is 0.5.
+
+(h) From those results above we can see that the Logistic Regression and LDA have the highest accuracy rate and provide the best results on this data.
+
+(i) Different variables.
+```{r}
+glm.fits1=glm(Direction~Lag1+Lag2+Lag3, data=Weekly, family=binomial, subset=train)
+glm.probs1=predict(glm.fits1, Weekly.20092010, type="response")
+glm.pred1=rep ("Down", 104)
+glm.pred1[glm.probs1>.5]="Up"
+glm.pred1=ifelse(glm.probs1>0.5,'Up','Down')
+table(glm.pred1, Direction.20092010)
+```
+```{r}
+glm.fits2=glm(Direction~Lag1*Lag2,data=Weekly,family=binomial,subset=train)
+glm.probs2=predict(glm.fits2,Weekly.20092010,type="response")
+glm.pred2=rep("Down",104)
+glm.pred2[glm.probs2>.5]="Up"
+glm.pred2=ifelse(glm.probs2>0.5,'Up','Down')
+table(glm.pred2,Direction.20092010)
+```
+```{r}
+glm.fits3=glm(Direction~Lag1^2,data=Weekly,family=binomial,subset=train)
+glm.probs3=predict(glm.fits3,Weekly.20092010,type="response")
+glm.pred3=rep("Down",104)
+glm.pred3[glm.probs3>.5]="Up"
+glm.pred3=ifelse(glm.probs3>0.5,'Up','Down')
+table(glm.pred3,Direction.20092010)
+```
+
+
+## Chapter 4 Problem 11
+(a)
+```{r}
+data(Auto)
+summary(Auto)
+```
+
+```{r}
+mpg01=Auto$mpg>median(Auto$mpg)
+AutoNew=data.frame(Auto,mpg01)
+```
+
+
+(b) Explore the data graphically.
+```{r}
+attach(AutoNew)
+pairs(AutoNew)
+boxplot(mpg~mpg01,col='blue')
+boxplot(cylinders~mpg01,col='blue')
+boxplot(displacement~mpg01,col='blue')
+boxplot(horsepower~mpg01,col='blue')
+boxplot(weight~mpg01,col='blue')
+boxplot(acceleration~mpg01,col='blue')
+boxplot(year~mpg01,col='blue')
+boxplot(origin~mpg01,col='blue')
+```
+
+(c) Split the data into a training set and a test set.
+```{r}
+# Generate one half of the whole the dataset by randomly choosing 196 indexes
+x=1:nrow(AutoNew)
+c=sort(sample(x=x,size=392/2))
+Auto_Train=AutoNew[c,]
+Auto_Test=AutoNew[-c,]
+```
+
+(d) LDA on the training data. Test error.
+```{r}
+lda.fit=lda(mpg01~weight+horsepower+acceleration, data=Auto_Train)
+lda.pred=predict(lda.fit, Auto_Test)
+table(lda.pred$class,Auto_Test$mpg01)
+```
+Test error is `r sum(lda.pred$class!=Auto_Test$mpg01)/(sum(lda.pred$class!=Auto_Test$mpg01)+sum(lda.pred$class==Auto_Test$mpg01)) * 100`%.
+
+(e) QDA on the training data. Test error.
+```{r}
+qda.fit=qda(mpg01~weight+horsepower+acceleration, data=Auto_Train)
+qda.pred=predict(qda.fit, Auto_Test)
+table(qda.pred$class,Auto_Test$mpg01)
+```
+Test error is `r sum(qda.pred$class!=Auto_Test$mpg01)/(sum(qda.pred$class!=Auto_Test$mpg01)+sum(qda.pred$class==Auto_Test$mpg01))`%.
+
+(f) Logistic regression on the training data. Test error.
+```{r}
+glm.fits=glm(mpg01~weight+horsepower+acceleration,data=Auto_Train,family=binomial)
+glm.probs=predict(glm.fits,Auto_Test,type="response")
+glm.pred=rep("FALSE",196)
+glm.pred[glm.probs>.5]="TRUE"
+table(glm.pred,Auto_Test$mpg01)
+```
+Test error is `r sum(glm.pred!=Auto_Test$mpg01)/(sum(glm.pred!=Auto_Test$mpg01)+sum(glm.pred==Auto_Test$mpg01))`%. 
+
+(g) KNN on the training data. Test error.
+```{r}
+set.seed(1)
+tr=Auto_Train[,c("weight","horsepower","acceleration")]
+t=Auto_Test[,c("weight","horsepower","acceleration")]
+for(i in 1:10){
+knn.pred1=knn(tr,t,as.factor(Auto_Train$mpg01),k=i)
+print(sum(knn.pred1!=Auto_Test$mpg01)/(sum(knn.pred1!=Auto_Test$mpg01)+sum(knn.pred1==Auto_Test$mpg01)))
+}
+
+```
+
+When K=4,6,7,8,9,10, the outcome is relatively the best compared to others.
