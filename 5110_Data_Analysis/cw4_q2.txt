@@ -1,0 +1,46 @@
+year fund rreturn
+1985 real 0.06
+1985 real 0.07
+1985 government 0.07
+1985 government 0.09
+1985 stock 0.03
+1985 stock 0.04
+1986 real 0.2
+1986 real 0.5
+1986 government 0.08
+1986 government 0.11
+1986 stock 0.09
+1986 stock 0.12
+1987 real 0.06
+1987 real 0.07
+1987 government 0.12
+1987 government 0.14
+1987 stock 0.08
+1987 stock 0.11
+1988 real 0.15
+1988 real 0.14
+1988 government 0.09
+1988 government 0.06
+1988 stock 0.15
+1988 stock 0.13
+1989 real 0.03
+1989 real 0.01
+1989 government 0.1
+1989 government 0.12
+1989 stock 0.2
+1989 stock 0.23
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

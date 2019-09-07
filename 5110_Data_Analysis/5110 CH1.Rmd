@@ -1,0 +1,339 @@
+---
+title: "5110 CH1"
+author: "Yifan YE"
+date: "11/30/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1.1 Basic Data Analysis
+
+```{r Loading Data}
+z = read.table("sp500.txt", header = T)
+colnames(z)
+
+# z[1:5, ]
+
+# z[1,]
+
+# z[,5]
+# z[1:5, 5]
+
+# z$close
+# z$close[1:5]
+
+# Select the first 2 columns
+# z[, 1:2]
+
+# Select the columns of open and close
+# z[, c(2, 5)]
+# cbind(z$open, z$close)
+
+# Select the rows where the highest price is greater than 1430
+# z[z$high > 1430, ]
+
+# Select the rows of closing price where the highest price is greater than 1430
+# z$close[z$high > 1430]
+
+# z[z$high > 1430, 5]
+
+# Select all the gender not named "Male"
+# file[file$gender != 'Male', ]
+```
+
+```{r Boxplot}
+#-------------# Boxplot of the data of daily closing price #----------------------------------------------
+boxplot(z$close, main = "Boxplot of daily closing price", ylab = "daily closing price", xlab = "")
+boxplot(z$close, horizontal = T)
+```
+
+```{r Boxplot for groups}
+#---------------------------------------------------------
+# Boxplot of the data of daily closing price across year
+#---------------------------------------------------------
+# 1 - 252: 2000 (252)
+# 253 - 500: 2001 (248)
+# 501 - 752: 2002 (252)
+# 753 - 1004: 2003 (252)
+# 1005 - 1256: 2004 (252)
+# 1257 - 1508: 2005 (252)
+# 1509 - 1759: 2006 (251)
+# 1760 - 2010: 2007 (251)
+# 2011 - 2263: 2008 (253)
+# 2264 - 2515: 2009 (252)
+# 2516 - 2767: 2010 (252)
+# 2767 - 2910: 2011 (143)
+
+y0 = rep(c(2000, 2002, 2003, 2004, 2005, 2009, 2010), each = 252)
+y1 = c(y0, rep(2001, 248), rep(c(2006, 2007), each = 251), rep(2008, 253), rep(2011, 143))
+year = sort(y1, decreasing = FALSE)
+z = cbind(z, year)
+z[1:5, ]
+
+boxplot(close~year, data = z)
+```
+
+```{r Line Chart}
+#--------------Line Chart #---------------
+
+# Problem 
+plot(z$date, z$close, type = "l")
+
+# dates are considered to be unusual numbers
+```
+
+```{r Date}
+# as.Date(as.character(20000103), format='%Y%m%d')
+z$date = as.Date(as.character(z$date), '%Y%m%d')
+z[1:5,]
+```
+
+```{r Date Problem}
+# Problem
+as.Date("January 01, 1970", format = "%B %d, %Y")
+```
+
+```{r Date Solution}
+# Solution
+lct = Sys.getlocale("LC_TIME")
+Sys.setlocale("LC_TIME", "C")
+as.Date("January 01, 1970", format = "%B %d, %Y")
+as.Date("01JAN70", format = "%d%b%y")
+```
+
+```{r time series plot}
+library("zoo")
+
+# Sort z$close by z$date
+close.z = zoo(x=z$close, order.by=z$date)
+plot(close.z, col="blue", lty=1, lwd=1) 
+```
+
+```{r ggplot2 1}
+# OR use the package "ggplot2"
+# install.packages("ggplot2")
+library("ggplot2")
+ggplot(z, aes(date, close)) + geom_line() + scale_x_date(breaks = "9 months") + xlab("") + ylab("Daily closing prices")
+```
+
+```{r ggplot2 2}
+# OR
+ggplot(z, aes(date, close)) + geom_line() + scale_x_date(date_breaks = "9 months") + xlab("") + ylab("Daily closing prices")
+```
+
+```{r Log return}
+######## Analysis of the log daily closing price of SP500 ###############
+rt = log(close.z) - lag(log(close.z), k = -1)
+# OR
+rt = diff(log(close.z))
+
+# as.vector(rt)
+# time(rt)
+```
+
+
+```{r Line chart of log 1}
+#---------------------------------------------------------
+# Line chart of log of daily closing price
+#---------------------------------------------------------
+plot(rt, col = "blue", lty = 1, lwd = 1, xlab = "date", ylab = "log of daily closing price")
+```
+
+```{r Line chart of log 2}
+# OR
+# Transform the zoo object to a data frame for ggplot2:
+
+rt_new = data.frame(time = time(rt), value = as.vector(rt))
+
+# Plot
+ggplot(rt_new, aes(y = value, x = time)) + geom_line() + scale_x_date(breaks = "9 months") + xlab("") + ylab("Log daily closing prices")
+# OR
+# ggplot(rt_new, aes(y = value, x = time)) + geom_line() + scale_x_date(date_breaks = "9 months") + xlab("") + ylab("Log daily closing prices")
+```
+
+```{r Boxplot of log return}
+#----- Boxplot of log of daily closing price #---------------------------------------------------------
+boxplot(as.vector(rt), main = "Boxplot of log of daily closing price", ylab = "Log of daily closing price", xlab = "")
+```
+
+```{r Numerical summary 1}
+#---------------- Numerical summary #--------------------
+rt_SP = as.vector(rt)
+
+mean(rt_SP)
+var(rt_SP)
+sd(rt_SP)
+
+# install.packages("moments")
+library(moments)
+skewness(rt_SP)
+kurtosis(rt_SP)
+```
+
+```{r Numerical summary 2}
+# For finding excess kurtosis directly, we can first install the package "PerformanceAnalytics"
+# install.packages("PerformanceAnalytics")
+library(PerformanceAnalytics)
+kurtosis(rt_SP, method = "excess")
+
+summary(rt_SP)
+
+quantile(rt_SP, seq(0.1, 0.9, by = 0.05))
+```
+
+```{r}
+#------------------ Q-Q plot #--------------------
+
+# Sort z$close by z$date
+close.z = zoo(x=z$close, order.by=z$date)
+
+rt = diff(log(close.z))
+rt_SP = as.vector(rt)
+
+qqnorm(rt_SP)
+qqline(rt_SP, col = "blue", lty = 2)
+
+# or
+qqnorm((rt_SP-mean(rt_SP))/sd(rt_SP))
+qqline((rt_SP-mean(rt_SP))/sd(rt_SP), col = "blue", lty = 2)
+```
+
+## 1.2 Advanced Data Analysis
+
+```{r One sample t-test}
+#------------------
+# One sample t-test
+#------------------
+# [R]
+# Null hypothesis: mean = 10
+x = c(14, 16, 17, 17, 24, 20, 32, 18, 29, 31, 15, 35)
+t.test(x, mu = 10, alternative = "two.sided")$p.value
+
+# Produce 95% Confidence interval
+t.test(x, mu = 10, conf.level=0.95)
+```
+
+```{r One-sample Wilcoxon test}
+#--------------------------
+# One-sample Wilcoxon test 
+#--------------------------
+# Null hypothesis: median = 10
+wilcox.test(x, mu = 10, alternative = "two.sided", exact = F, correct = T)
+
+## exact: a logical indicating whether an exact p-value should be computed.
+## correct: a logical indicating whether to apply continuity correction in the normal approximation for the p-value.
+
+wilcox.test(x, mu = 10, alternative = "two.sided", exact = F, correct = F)$p.value
+
+```
+
+```{r Two-sample independent t-test}
+#-------------------------------
+# Two-sample independent t-test 
+#-------------------------------
+x = c(12, 11, 7, 13, 8, 9, 10, 13)
+y = c(13, 11, 10, 6, 7, 4, 10)
+
+# Test if the population variances are equal
+mood.test(x, y)
+# different results from iPython
+# because some data are tied
+
+# Test if the population means are equal
+# var.equal = T is used for the assumption of equal variances
+t.test(x, y, mu = 0, var.equal = T, alternative = "two.sided", conf.level = 0.97)
+```
+
+```{r Two-sample Wilcoxon test}
+#--------------------------
+# Two-sample Wilcoxon test
+#--------------------------
+wilcox.test(x, y, mu = 0, paired = F, alternative = "two.sided", exact = F, correct = T)
+wilcox.test(x, y, mu = 0, paired = F, alternative = "two.sided", exact = F, correct = F)
+
+```
+
+```{r Normality test}
+#-------------------------------
+# Normality test
+#-------------------------------
+# [R]
+
+shapiro.test(rt_SP)
+
+ks.test(rt_SP, "pnorm", mean = mean(rt_SP), sd = sd(rt_SP))
+
+# install.packages(girmess)
+library(pgirmess)
+ks.gof(rt_SP)
+
+# There are two data having the same value
+# as.data.frame(table(rt_SP))[,2]
+
+# install.packages("nortest")
+library(nortest)
+ad.test(rt_SP)
+```
+
+```{r Appendix}
+# In most cases, the importation of financial data from the web is performed using specific packages. 
+# For Finance, there are several packages in R with this purpose: 
+# quantmod, BatchGetSymbols, finreportr, tidyquant, GetHFData, ustyc, Quandl and Rbitcoin.
+#
+# Read Yahoo!/ Google finance data 
+# 
+# get data for Apple stock; Apple's ticker symbol is AAPL. We use the
+# quantmod function getSymbols, and pass a string as a first argument to
+# identify the desired ticker symbol, pass 'yahoo' to src for Yahoo!
+# Finance, and from and to specify date ranges
+
+# The default behavior for getSymbols is to load data directly into the
+# global environment, with the object being named after the loaded ticker
+# symbol. This feature may become deprecated in the future, but we exploit
+# it now.
+
+library(quantmod)
+
+start = as.Date("2016-01-01")
+end = as.Date("2016-10-01")
+df = getSymbols("AAPL", src = "yahoo", from = start, to = end)
+
+
+# However, Yahoo! has taken down ichart and all open-source libraries relying on it are now broken. 
+# So, we cannot get any Yahoo!/ Google data with the above procedure.
+
+
+
+# Quandl works as an aggregator of public databases, plus they offer access to subscription databases. 
+# Both Yahoo and FRED datasets can be accessed using Quandl and their package Quandl. 
+# The tickers for FRED variables are the same we used earlier with the addition of FRED/ 
+# while for Yahoo the tickers for the S&P 500 and the Dow Jones indices are "YAHOO/INDEX_GSPC" and "YAHOO/INDEX_DJI". 
+
+# install.packages("Quandl")
+library(Quandl)
+
+# Get online data of NSE/OIL - National Stock Exchange of India Ltd
+df = Quandl("NSE/OIL", collapse="daily", start_date="2013-01-01", end_date="2015-12-31", order = "asc")
+head(df)
+
+# Consider the daily closing price
+nseoil_close = df$Close
+
+# Calculate Moving averages by using SMA() in the R package TTR 
+library("TTR")
+short_MA_nseoil = SMA(nseoil_close, n = 20)
+long_MA_nseoil = SMA(nseoil_close, n = 100)
+
+
+plot(df$Date, df$Close, type = "l", col = "gainsboro")
+lines(df$Date, short_MA_nseoil, col = "chocolate1")
+lines(df$Date, long_MA_nseoil, col = "chartreuse4")
+legend("topright", c("Data", "20-day MA", "100-day MA"), col = c("gainsboro", "chocolate1", "chartreuse4"), lty = c(1, 1, 1))
+```
+
+
+
+

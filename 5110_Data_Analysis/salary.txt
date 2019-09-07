@@ -1,0 +1,32 @@
+region year salary
+West 1 16
+West 1 16.5
+Midwest 1 21
+Midwest 1 20.5
+Northeast 1 18
+Northeast 1 19
+South 1 13
+South 1 13.5
+West 2 19
+West 2 17
+Midwest 2 20
+Midwest 2 19
+Northeast 2 21
+Northeast 2 20.9
+South 2 20
+South 2 20.8
+West 3 24
+West 3 25
+Midwest 3 21
+Midwest 3 22.5
+Northeast 3 22
+Northeast 3 21 
+South 3 25
+South 3 23
+
+
+ 
+
+
+
+

@@ -1,0 +1,33 @@
+type year rreturn
+Growth 1990 12 
+Growth 1990 17 
+Growth 1990 19 
+Growth 1991 17
+Growth 1991 18 
+Growth 1991 21 
+Growth 1992 21 
+Growth 1992 22
+Growth 1992 21 
+Income 1990 14 
+Income 1990 12 
+Income 1990 12 
+Income 1991 13 
+Income 1991 19 
+Income 1991 14 
+Income 1992 16 
+Income 1992 13 
+Income 1992 15 
+Mix 1990 15 
+Mix 1990 16 
+Mix 1990 17 
+Mix 1991 15 
+Mix 1991 18 
+Mix 1991 15 
+Mix 1992 17 
+Mix 1992 15
+Mix 1992 18
+ 
+
+
+
+

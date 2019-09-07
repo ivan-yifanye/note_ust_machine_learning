@@ -1,0 +1,618 @@
+---
+title: "5110 CH2 P2"
+author: "Yifan YE"
+date: "11/30/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 2.2 Multi Linear Regression Models
+
+```{r Weekly interest model 1}
+# Variables are:
+# month, day, year
+# ff (Federal funds rate)
+# tb03 (3 month t-bill rate)
+# cm10 (constant maturity 10-year Treasury bond rate)
+# cm30 (constant maturity 30-year Treasury bond rate)
+# discount
+# prime
+# aaa  (corporate AAA bond yield )
+
+# The value 0 in each cell is used for missing data
+# Note that there is no information of the data on the last column in the original data set 
+# However, we will not use it in our analysis, so I simply use a variable k for the column data 
+
+z0 = read.table("1_weeklyinterest.txt")
+
+# Read non-missing data only
+z = z0[z0[, 7] > 0, ]
+
+# Variables: month, day, year, ff, tb03, cm10, cm30, discount, prime, aaa, k
+# Define Y, X1, and X2
+aaa_dif = diff(z[, 10], lag = 1)
+cm10_dif = diff(z[, 6], lag = 1)
+cm30_dif = diff(z[, 7], lag = 1)
+
+fit1 = lm(aaa_dif~cm10_dif+cm30_dif)
+summary(fit1)
+
+# C.I.
+confint(fit1, level = 0.9)
+
+# Hypothesis testing
+# install.packages("car")
+library("car")
+
+linearHypothesis(fit1, "cm10_dif = 0.5")
+linearHypothesis(fit1, matrix(c(0, 1, 0, 0, 0, 1), nrow = 2, byrow = T), c(0.5, 0.5))
+
+linearHypothesis(fit1, c(0, 1, -1), 0)
+linearHypothesis(fit1, c(0, 3, -1), 4)
+linearHypothesis(fit1, matrix(c(1, 0, 0, 0, 1, -1, 0, 3, -1), ncol = 3, byrow = T), c(0, 0, 4))
+```
+
+```{r Weekly interest model 2}
+###################### Prediction (out-sample) ##############################
+new = data.frame(cm10_dif = c(-0.02, 0.12), cm30_dif = c(0.13, 0.07))
+predict(fit1, new, interval = "confidence", level = 0.9)
+predict(fit1, new, interval = "prediction", level = 0.9)
+```
+
+```{r Weekly interest model 3}
+# Fit a regression model without intercept
+fit2 = lm(aaa_dif ~ -1 + cm10_dif + cm30_dif)
+summary(fit2)
+
+# Test beta1 = beta2
+linearHypothesis(fit2, c(1, -1), 0)
+```
+
+```{r Weekly interest model 4}
+# Define a new variable that is the sum of cm10_dif and cm30_dif
+totalcm_dif = cm10_dif + cm30_dif
+
+######################### Scatter plot ##############
+# Plot and Model aaa_dif with a single variable totalcm_dif
+plot(totalcm_dif, aaa_dif)
+
+# Fit a simple linear regression model with totalcm_dif
+fit3 = lm(aaa_dif ~ totalcm_dif)
+summary(fit3)
+
+# Refit the simple linear regression model without intercept
+fit4 = lm(aaa_dif ~ -1 + totalcm_dif)
+summary(fit4)
+```
+
+```{r FF 1}
+z_ibm = read.table("2_IBM_GE_Jan69_Dec98.txt", header = T, sep = ",")
+
+z_ff0 = read.table("2_FF_Data_Jan69_Dec98.txt", header = T)
+colnames(z_ff0) = c("date", "rm", "smb", "hml", "rf")
+# rm is the  excess return for market portfolio
+# rf is the 1-month TBill return
+
+# keep data only from Jan 1969 (511th) to Dec 1998 (870th)
+z_ff = z_ff0[511:870, ]
+
+ribm = z_ibm$ibm*100 - z_ff$rf
+
+ibm_ff = data.frame(cbind(z_ibm, z_ff, ribm))
+
+# FF model
+ff_model = lm(ribm~rm+smb+hml, data = ibm_ff)
+summary(ff_model)
+
+# FF model without intercept
+ff_model_0 = lm(ribm~-1+rm+smb+hml, data = ibm_ff)
+summary(ff_model_0)
+
+# CAPM 
+capmodel = lm(ribm~-1+rm, data = ibm_ff)
+summary(capmodel)
+```
+
+```{r FF 2}
+# Use FF's data set
+ffdata = read.table("ffdata.csv", header=TRUE, sep=",")
+ 
+# Fama-French Factors and Fund Returns
+rm = ffdata[,2]
+smb = ffdata[,3]
+hml = ffdata[,4]
+rf = ffdata[,5]
+return = ffdata[,6]
+ 
+# Calculate Excess Returns for Target fund
+xreturn = return - rf
+ 
+# Fama-French Model
+ff_model_1 = lm(xreturn ~ rm + smb + hml)
+ 
+summary(ff_model_1)
+
+# Plot the actual excess return against the excess return predicted by FF model
+plot(predict(ff_model_1), xreturn, pch=16, asp=1, ylab="Actual excess Return", xlab="FF Expected excess Return", main="Actual vs FF Expected excess monthly returns")
+abline(0,1)
+```
+
+```{r HK Exchange 1}
+z = read.table("3_HKExchange.txt", sep = "\t", head = T)
+
+# Define a time index for the 502 daily observations and combine it with the current R file z
+time_index = 1:(dim(z)[1])
+EXHKUS = z$EXHKUS
+
+plot(time_index, EXHKUS, type = "l")
+# It shows nonlinear pattern
+```
+
+```{r HK Exchange 2}
+# Fit data by using a quadratic regression model
+f1 = lm(EXHKUS~time_index+I(time_index^2))
+
+# Or use the following script by defining time_index_sq 
+# time_index_sq = (time_index)^2
+# f1 = lm(EXHKUS~time_index+time_index_sq)
+
+summary(f1)
+
+# Plot a graph of the predicted values against time_index 
+pf1 = data.frame(predict(f1))[,1]
+
+plot(time_index, EXHKUS, type = "l")
+lines(time_index, pf1, col = "red", lty = 3)
+```
+
+```{r HK Exchange 3}
+# Cubic regression
+f2 = lm(EXHKUS~time_index+I(time_index^2)+I(time_index^3))
+pf2 = data.frame(predict(f2))[,1]
+
+plot(time_index, EXHKUS, type = "l")
+lines(time_index, pf2, col = "blue", lty = 2)
+
+plot(time_index, EXHKUS, type = "l")
+lines(time_index, pf1, col = "red", lty = 3)
+lines(time_index, pf2, col = "blue", lty = 2)
+legend(x="bottomright", c("Quadratic", "Cubic"), col = c("red", "blue"), lty = c(3, 2))
+```
+
+```{r HK Exchange 4}
+# Apply the regression results to the forecasting problem. 
+# Suppose that we want to predict the exchange rate for March 31, 2007, or t = 503.    
+new = data.frame(time_index = 503)
+# Quadratic
+predict(f1, new)
+
+# Cubic
+predict(f2, new)
+```
+
+```{r HK Exchange 5}
+# Cubic Spline
+
+x1 = time_index
+x2 = time_index^2
+x3 = time_index^3
+x4 = (time_index > 100)*(time_index-100)^3
+x5 = (time_index > 210)*(time_index-210)^3
+x6 = (time_index > 390)*(time_index-390)^3
+
+# Fit data by using a cubic spline at knots 100, 210 and 390
+f_cubic = lm(EXHKUS~x1+x2+x3+x4+x5+x6)
+
+summary(f_cubic)
+
+# Plot a graph of the predicted values against time_index 
+pf_cubic = data.frame(predict(f_cubic))[,1]
+
+plot(time_index, EXHKUS, type = "l")
+lines(time_index, pf_cubic, col = "blue", lty = 3)
+```
+
+```{r HK Exchange 6}
+# In-sample Prediction interval
+p_in_l = predict(f_cubic, interval = "prediction", level = 0.95)[,2]
+p_in_u = predict(f_cubic, interval = "prediction", level = 0.95)[,3]
+
+# Note that time_index is sorted already
+plot(time_index, EXHKUS, type = "l", ylim = c(7.74, 7.84))
+lines(time_index, pf_cubic, col = "blue", lty = 3)
+lines(time_index, p_in_l, col = "blue", lty = 2, lwd = 2)
+lines(time_index, p_in_u, col = "blue", lty = 2, lwd = 2)
+
+# Out-sample prediction
+new = data.frame(x1 = 503, x2 = 503^2, x3 = 503^3, x4 = (503-100)^3, x5 = (503-210)^3, x6 = (503-390)^3)
+p_out_l = predict(f_cubic, new, interval = "prediction", level = 0.95)[, 2]
+p_out_u = predict(f_cubic, new, interval = "prediction", level = 0.95)[, 3]
+
+points(503, p_out_l, pch = 4, col = "red")
+points(503, p_out_u, pch = 4, col = "red")
+
+abline(v = 503, lty = 3)
+```
+
+```{r HK Exchange 7}
+# The normal equations associated with the truncated power basis are highly ill-conditioned.
+# The only difficulty is the poor conditioning of the truncated power basis which will result in inaccuracies in the calculation of B.
+# In the polynomial context, this problem is avoided by considering orthogonal polynomials. For k > 0, there are no orthogonal splines. 
+# However, there is a basis which is reasonably well-conditioned, the B-spline basis.
+#
+# B-spline 
+library("splines")
+f_bs = lm(EXHKUS ~ bs(time_index, degree=3, knots=c(100,210,390)))
+summary(f_bs)
+
+ps_cubic = data.frame(predict(f_bs))[,1]
+ps_in_l = predict(f_bs, interval = "prediction", level = 0.95)[,2]
+ps_in_u = predict(f_bs, interval = "prediction", level = 0.95)[,3]
+
+# Note that time_index is sorted already
+plot(time_index, EXHKUS, type = "l")
+lines(time_index, ps_cubic, col = "blue", lty = 3)
+lines(time_index, ps_in_l, col = "blue", lty = 2, lwd = 2)
+lines(time_index, ps_in_u, col = "blue", lty = 2, lwd = 2)
+```
+
+```{r HK Exchange 8}
+# Smoothing spline;
+# Fitting smoothing splines using smooth.spline(X,Y,lambda =...)
+# The best way to select the value of lambda is Cross Validation. 
+# Now we have a direct method to implement cross validation in R using smooth.spline().
+
+# Implementing Cross Validation to select value of lambda:
+smooth.spline(time_index, EXHKUS, cv = TRUE)
+# Leave-one-out when cv = TRUE or 'generalized' cross-validation 'GCV' when cv = FALSE
+
+s = smooth.spline(time_index, EXHKUS, cv = TRUE)$spar
+
+# spar: smoothing parameter, typically (but not necessarily) in (0,1]. 
+# The coefficient lambda of the integral of the squared second derivative in the fit (penalized log likelihood) criterion is a monotone function of spar
+
+f_smooth = smooth.spline(time_index, EXHKUS, spar = s) 
+
+# Plotting both cubic and Smoothing Splines 
+pf_cubic = data.frame(predict(f_cubic))[,1]
+pf_smooth = predict(f_smooth)$y
+
+plot(time_index, EXHKUS, type = "l")
+lines(time_index, pf_cubic, col = "blue", lwd=1, lty = 3)
+lines(time_index, pf_smooth,col="red",lwd=2,lty = 3)
+
+legend("topleft",c("Smoothing Spline","Cubic Spline"),col=c("red", "blue"),lwd= c(2, 1), lty = c(3, 3))
+```
+
+```{r HK Exchange 9}
+f_smooth_df = smooth.spline(time_index, EXHKUS, df = 16) 
+
+# Plotting both cubic and Smoothing Splines 
+pf_cubic = data.frame(predict(f_cubic))[,1]
+pf_smooth_df = predict(f_smooth_df)$y
+
+plot(time_index, EXHKUS, type = "l")
+lines(time_index, pf_cubic, col = "blue", lwd=1, lty = 3)
+lines(time_index, pf_smooth_df,col="red",lwd=2, lty = 3)
+
+legend("topleft",c("Smoothing Spline with 16 df","Cubic Spline"),col=c("red", "blue"),lwd= c(2, 1), lty = c(3, 3))
+```
+
+```{r Model / Variable Selection 1}
+z0 = read.table("1_weeklyinterest.txt")
+z = z0[z0[, 7]>0, ]
+ 
+aaa_dif = diff(z[, 10], lag = 1)
+cm10_dif = diff(z[, 6], lag = 1)
+cm30_dif = diff(z[, 7], lag = 1)
+ff_dif = diff(z[, 4], lag = 1)
+prime_dif = diff(z[, 9], lag = 1)
+
+# install.packages("leaps")
+# package 'leaps' was built under R version 3.1.3 
+library("leaps")
+library("bestglm")
+
+# Cp
+designx = cbind(cm10_dif, cm30_dif, ff_dif, prime_dif)
+leaps(designx, aaa_dif, method = "Cp")
+
+# Adjusted R2
+designx = cbind(cm10_dif, cm30_dif, ff_dif, prime_dif)
+leaps(designx, aaa_dif, method = "adjr2")
+
+# R2
+designx = cbind(cm10_dif, cm30_dif, ff_dif, prime_dif)
+leaps(designx, aaa_dif, method = "r2")
+
+# AIC and BIC
+designx = cbind(cm10_dif, cm30_dif, ff_dif, prime_dif)
+Xy=cbind(as.data.frame(designx),aaa_dif)
+bestglm(Xy, IC="AIC")$BestModel
+bestglm(Xy, IC="BIC")$BestModel
+```
+
+```{r Model / Variable Selection 2}
+# Sequential methods 
+#
+# step(object, scope, scale = 0,
+#     direction = c("both", "backward", "forward"),
+#     trace = 1, keep = NULL, steps = 1000, k = 2, ...)
+
+# Backward Elimination
+fit_full = lm(aaa_dif~cm10_dif + cm30_dif + ff_dif + prime_dif)
+
+fitB = step(fit_full, direction = "backward")
+
+fitB
+
+# Forward Selection
+# For forward and stepwise in R, we would start from the simplest model. 
+fit0 = lm(aaa_dif~1)
+
+fitfwd = step(fit0, direction = "forward", scope = (~cm10_dif + cm30_dif + ff_dif + prime_dif))
+
+fitfwd
+
+# Stepwise
+fit0 = lm(aaa_dif~1)
+
+fitstep = step(fit0, direction = "both", scope = (~cm10_dif + cm30_dif + ff_dif + prime_dif))
+
+fitstep
+```
+
+```{r Model Diagnostic and Remedies 1}
+z = read.table("5_hprice.txt", header = T, sep = "\t")
+
+fit = lm(Y~X1+X2+X3+X4, data = z)
+
+### Externally studentized resiudal and predicted y
+extresid = rstudent(fit)
+pred = predict(fit)
+
+### Externally studentized resiudal Plot
+plot(pred, extresid)
+
+### Normal plot of extresid 
+qqnorm(extresid)
+qqline(extresid)
+```
+
+```{r Model Diagnostic and Remedies 2}
+### Normality test of extresid
+# Shapiro-Wilk test
+shapiro.test(extresid)
+
+# K-S test
+# install.packages("pgirmess") # package 'pgirmess' was built under R version 3.1.3 
+library(pgirmess)
+ks.gof(extresid)
+
+# install.packages("nortest") # package 'nortest' was built under R version 3.1.3 
+library(nortest)
+# Anderson-Darling test
+ad.test(extresid)
+```
+
+```{r Box-Cox transformation 1}
+# Suspect the assumptions of constant variance and normal distribution
+# Use Box-Cox transformation 
+
+library("MASS")
+
+b = boxcox(fit, lambda = seq(-2, 2, 1/100))
+
+# Find the point from seq(-2, 2, 1/100) at which the likelihood is maximized
+b$x[which.max(b$y)]
+
+# Use lambda = 0.11 to define a B-C transformed Y
+BCY = (z$Y^0.11-1)/(0.11)
+zbc = cbind(z, BCY)
+
+fitBC = lm(BCY~X1+X2+X3+X4, data = zbc)
+
+### Externally studentized resiudal and predicted y
+extresidBC = rstudent(fitBC)
+pred = predict(fitBC)
+
+### Externally studentized resiudal Plot
+plot(pred, extresidBC)
+
+### Normal plot of extresid 
+qqnorm(extresidBC)
+qqline(extresidBC)
+```
+
+```{r Box-Cox transformation 2}
+### Normality test of extresid
+# Shapiro-Wilk test
+shapiro.test(extresidBC)
+
+# K-S test
+# install.packages("pgirmess") # package 'pgirmess' was built under R version 3.1.3 
+library(pgirmess)
+ks.gof(extresidBC)
+
+
+# install.packages("nortest") # package 'nortest' was built under R version 3.1.3 
+library(nortest)
+# Anderson-Darling test
+ad.test(extresidBC)
+```
+
+```{r CR plot}
+######### Refer to the example of house pricing before ######
+
+z = read.table("5_hprice.txt", header = T, sep = "\t")
+fit = lm(Y~X1+X2+X3+X4, data = z)
+
+# Partial Residual Plots
+# CR plot
+library(car)
+crPlots(fit)
+# The red line is the partial fit, assuming linearity in the partial relationship between y and xj. 
+# The green line is a lowess smooth.
+# If the green line is very different from the red one, then a transformation of xj is required.
+```
+
+```{r Box-Tidwell Transformation}
+# Box-Tidwell Transformation when non-linearity is detected.
+# Consider the data on percent change in the index of hourly earnings (Y) 
+# and the civilian unemployment rate, percent, (X) for the US for years 1958 to 1969.
+
+y = c(4.2, 3.5, 3.4, 3.0, 3.4, 2.8, 2.8, 3.6, 4.3, 5.0, 6.1, 6.7)
+x = c(6.8, 5.5, 5.5, 6.7, 5.5, 5.7, 5.2, 4.5, 3.8, 3.8, 3.6, 3.5)
+
+plot(x, y)
+
+# install.packages("car") # It was built under R version 3.1.3
+library("car")
+
+boxTidwell(y~x)
+
+x1 = x^(-11.1)
+plot(x1, y)
+
+summary(lm(y~x))
+
+summary(lm(y~x1))
+
+# Draw a prediction curve on the scatter plot with the original x
+plot(x, y)
+pred1 = predict(lm(y~x1))
+lines(x, pred1, lty = 3, col = 2)
+```
+
+```{r Autocorrelation}
+z = read.table("5_hprice.txt", header = T, sep = "\t")
+
+# install.packages(lmtest)
+library(lmtest) # package 'lmtest' was built under R version 3.1.3 
+dwtest(Y~X1+X2+X3+X4, data = z)  
+
+# Plot e_t vs e_t-1
+fit = lm(Y~X1+X2+X3+X4, data = z)
+et = residuals(fit)
+
+# install.packages("quantmod") # package 'quantmod' was built under R version 3.1.3 
+library(quantmod)
+et_1 = Lag(et, k=1)
+
+# View et and et_1 
+# cbind(et, et_1)
+
+plot(et_1[-1], et[-1])
+
+d = 1.4829
+p = 1 - d/2
+
+newY = z$Y - p*Lag(z$Y, k=1)
+newX1 = z$X1 - p*Lag(z$X1, k=1)
+newX2 = z$X2 - p*Lag(z$X2, k=1)
+newX3 = z$X3 - p*Lag(z$X3, k=1)
+newX4 = z$X4 - p*Lag(z$X4, k=1)
+
+newz = data.frame(cbind(newY, newX1, newX2, newX3, newX4))
+
+dwtest(newY~newX1+newX2+newX3+newX4, data = newz[-1,])
+```
+
+```{r Multicollinearity}
+# PPS = "price per share"
+# EPS = "earning per share"
+# DPS = "dividend per share"
+
+dw30 = read.table("8_DW30_multicollinearity.txt", head = T)
+
+# Define retained earning per share
+# RE = EPS - DPS 
+RE = dw30$EPS - dw30$DPS;
+
+dw30 = cbind(dw30, RE)
+
+# Fit a multiple linear regression model of PPS on DPS and RE 
+
+fit = lm(PPS~DPS+RE, data = dw30)
+
+# install.packages("faraway") # This package was built under R version 3.1.3
+library("faraway")
+
+vif(fit)
+
+# OR 
+vif(cbind(dw30$DPS, dw30$RE))
+```
+
+```{r Another Example}
+# Variables are:
+# month, day, year
+# ff (Federal funds rate)
+# tb03 (3 month t-bill rate)
+# cm10 (constant maturity 10-year Treasury bond rate)
+# cm30 (constant maturity 30-year Treasury bond rate)
+# discount
+# prime
+# aaa  (corporate AAA bond yield )
+
+# The value 0 in each cell is used for missing data
+# Note that there is no information of the data on the last column in the original data set 
+# However, we will not use it in our analysis, so I simply use a variable k for the column data 
+
+z0 = read.table("1_weeklyinterest.txt")
+
+# Read non-missing data only
+z = z0[z0[, 7] > 0, ]
+
+# Variables: month, day, year, ff, tb03, cm10, cm30, discount, prime, aaa, k
+# Define required variables
+aaa_dif = diff(z[, 10], lag = 1)
+cm10_dif = diff(z[, 6], lag = 1)
+cm30_dif = diff(z[, 7], lag = 1)
+ff_dif = diff(z[, 4], lag = 1)
+prime_dif = diff(z[, 9], lag = 1)
+
+library(faraway)
+fit1 = lm(aaa_dif~cm10_dif+cm30_dif+ff_dif+prime_dif)
+vif(fit1)
+
+# Or
+# xx = data.frame(cm10_dif, cm30_dif, ff_dif, prime_dif)
+# vif(cbind(xx$cm10_dif, xx$cm30_dif, xx$ff_dif, xx$prime_dif))
+
+# Drop cm10_dif which has largest VIF > 10
+fit2 = lm(aaa_dif~cm30_dif+ff_dif+prime_dif)
+vif(fit2)
+
+# Or
+# vif(cbind(xx$cm30_dif, xx$ff_dif, xx$prime_dif))
+```
+
+```{r Ridge Regression}
+################### Ridge Regression ############
+summary(fit1) # Residual standard error = 0.06465
+
+# Use Hoerl and Kennard's method to choose lambda
+k = 4 # number of explanatory variables
+B = fit1$coef
+s = 0.06465
+HKlambda = (k+1)*s^2/sum(B^2)
+
+HKlambda
+
+# Ridge estimates 
+X = cbind(1, cm10_dif, cm30_dif, ff_dif, prime_dif)
+y = aaa_dif
+
+A1 = t(X)%*%X + HKlambda*diag(dim(X)[2])
+A2 = t(X)%*%y
+
+solve(A1)%*%(A2)
+
+# coompute by formulas
+```
+
+
